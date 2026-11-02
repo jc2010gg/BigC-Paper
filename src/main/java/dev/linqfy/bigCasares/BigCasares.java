@@ -41,6 +41,7 @@ import dev.linqfy.bigCasares.modules.shop.ShopModule;
 import dev.linqfy.bigCasares.modules.skillrating.SkillRatingModule;
 import dev.linqfy.bigCasares.modules.smokebomb.SmokeBombModule;
 import dev.linqfy.bigCasares.modules.teams.TeamModule;
+import dev.linqfy.bigCasares.modules.tideframe.TideframeUiModule;
 import dev.linqfy.bigCasares.modules.discord.DiscordIntegrationModule;
 import dev.linqfy.bigCasares.modules.endevent.EndEventModule;
 import dev.linqfy.bigCasares.modules.moderation.ModerationModule;
@@ -78,6 +79,7 @@ public final class BigCasares extends JavaPlugin {
 
     private ResourcePackModule resourcePackModule;
     private ItemCatalogModule itemCatalogModule;
+    private TideframeUiModule tideframeUiModule;
     private TeamModule teamModule;
     private NexusModule nexusModule;
     private PveBossModule pveBossModule;
@@ -98,6 +100,12 @@ public final class BigCasares extends JavaPlugin {
     private EmojiAliasService emojiAliasService;
     private final VanishSessionRegistry vanishSessionRegistry = new VanishSessionRegistry();
     private final ReloadCoordinator reloadCoordinator = new ReloadCoordinator();
+
+    @Override
+    public void onLoad() {
+        // Before any plugin enables: Tideframe bakes its first pack from its screens folder while enabling.
+        TideframeUiModule.installBeforeTideframeStarts(this);
+    }
 
     @Override
     public void onEnable() {
@@ -369,9 +377,17 @@ public final class BigCasares extends JavaPlugin {
             this, moderationModule.audit(), serverControlModule, emojiAliasService
         );
         this.shopModule.configurePlatform(this::resolveClientPlatform, this::sendBedrockShopForm);
+        // Optional Tideframe screens (Java): missions and shop keep their services; without Tideframe nothing changes.
+        TideframeUiModule tideframeUi = new TideframeUiModule(this, this::resolveClientPlatform);
+        this.tideframeUiModule = tideframeUi;
+        this.missionModule.configureTideframe(tideframeUi::missions);
+        this.shopModule.configureTideframe(tideframeUi::shop);
+        this.missionModule.configureTideframeNavigation(tideframeUi::navigation);
+        this.shopModule.configureTideframeNavigation(tideframeUi::navigation);
 
         moduleManager.register(resourcePackModule);
         moduleManager.register(itemCatalogModule);
+        moduleManager.register(tideframeUi);
         moduleManager.register(new CopperAppleModule(this));
         moduleManager.register(new SmokeBombModule(this));
         moduleManager.register(new CustomCrossbowModule(this));
@@ -537,6 +553,7 @@ public final class BigCasares extends JavaPlugin {
 
         resourcePackModule = null;
         itemCatalogModule = null;
+        tideframeUiModule = null;
         teamModule = null;
         nexusModule = null;
         pveBossModule = null;

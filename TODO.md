@@ -120,3 +120,32 @@ unidad por selección. El premio pertenece al ganador registrado, no a toda la p
 - [ ] Registrar rendimiento económico por hora de juego normal y de repetición:
   panes, diamantes, consumibles y objetos raros obtenidos. Ajustar configuración
   antes de habilitar la mecánica en la economía principal.
+
+# TODO — pantallas de Tideframe (misiones y tienda) con clientes reales
+
+Pendiente de prueba manual: los tests cubren reglas, contratos de pantalla y que BigCasares cargue sin
+Tideframe, no el dibujo ni los clics en un cliente. Ver [docs/tideframe.md](docs/tideframe.md).
+
+- [ ] Servidor de prueba con BigCasares, BetterModel, Vault con una economía y Tideframe; anotar versiones y
+  confirmar en el log "Tideframe conectado" y la instalación de `bigc_misiones` y `bigc_tienda`.
+- [ ] Java con los dos packs aceptados: `/misiones` y `/shop` abren las pantallas de Tideframe, se leen enteras
+  a la escala de GUI habitual y la X cierra. Sin el pack de Tideframe se abren los menús de inventario.
+- [ ] Tienda: un clic izquierdo compra una vez y uno derecho vende una vez (saldo e inventario antes y
+  después), con inventario lleno, saldo insuficiente, objetos custom (PDC, tier, modelo, stack) y páginas.
+- [ ] Doble clic sobre una categoría y clic apenas cambia la página: no se compra nada; medio segundo después
+  sí. Anotar si la espera se nota con el ping real.
+- [ ] Recargar la tienda o BigCasares con la pantalla abierta: no se compra nada desde una vista vieja.
+- [ ] Misiones: progreso, "¡Lista!" y "Cobrada" coinciden con el menú de inventario; "Reclamar" (clic
+  izquierdo) cierra la pantalla, abre ese menú y cobra una sola vez; el clic derecho no hace nada.
+- [ ] `/shop` y `/misiones` dos veces seguidas con la pantalla abierta: los botones siguen funcionando.
+- [ ] `/tideframe reload` con una pantalla `bigc_*` abierta: no vuelve sola, el jugador ve el aviso y el
+  comando la abre de nuevo. Lo mismo con `/tideframe open bigc_tienda`.
+- [ ] Tideframe con `pack.send: false`: el log lo avisa y se abren los menús de siempre.
+- [ ] Cambiar ese archivo a `pack.send: true` sin reiniciar Tideframe y recargar solo BigCasares:
+  debe seguir usando inventarios hasta reiniciar el servidor completo.
+- [ ] Una pantalla editada con un comando `/shop` al cerrar: la tienda siguiente conserva sus filas y clics.
+- [ ] Pulsar "Reclamar" y pedir `/shop` inmediatamente: no debe aparecer el inventario de reclamos,
+  ni siquiera si la tienda se cierra antes de que venza la apertura diferida.
+- [ ] Planeando, con el gancho, en vehículo o en el aire: se abre el menú de inventario, no Tideframe.
+- [ ] Bedrock (Geyser/Floodgate): `/shop` sigue con formularios y `/misiones` con su menú; nada de Tideframe.
+- [ ] Editar una pantalla en el editor de Tideframe y reiniciar: la edición se conserva.

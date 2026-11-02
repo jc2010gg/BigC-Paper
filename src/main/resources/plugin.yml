@@ -4,7 +4,7 @@ main: dev.linqfy.bigCasares.BigCasares
 api-version: '26.2'
 load: POSTWORLD
 depend: [BetterModel]
-softdepend: [Vault, PlaceholderAPI, Geyser-Spigot, floodgate]
+softdepend: [Vault, PlaceholderAPI, Geyser-Spigot, floodgate, Tideframe]
 authors: [ linqfy ]
 description: BigCasares core plugin for server modules
 libraries:

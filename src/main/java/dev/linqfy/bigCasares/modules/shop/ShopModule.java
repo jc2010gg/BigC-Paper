@@ -39,6 +39,11 @@ public final class ShopModule implements PluginModule {
     private final List<org.bukkit.entity.Entity> npcs = new ArrayList<>();
     private ClientPlatformGateway platformGateway = ignored -> ClientPlatform.JAVA;
     private BedrockFormSender bedrockFormSender;
+    private java.util.function.Supplier<dev.linqfy.bigCasares.modules.tideframe.TideframeUi> tideframe =
+        () -> dev.linqfy.bigCasares.modules.tideframe.TideframeUi.NONE;
+    private ShopTideframeMenu tideframeMenu;
+    private java.util.function.Supplier<dev.linqfy.bigCasares.modules.tideframe.TideframeUi> tideframeNavigation =
+        () -> dev.linqfy.bigCasares.modules.tideframe.TideframeUi.NONE;
     private final ShopFormGeneration formGeneration = new ShopFormGeneration();
     private boolean enabled;
     private BukkitRuntimeRegistrations registrations;
@@ -114,6 +119,21 @@ public final class ShopModule implements PluginModule {
         ShopGuiController ownedGuiController = guiController;
         registrations.registerListener(nextResourceId("shop-gui-listener"), ownedGuiController);
         registrations.ownCleanup(nextResourceId("shop-gui-windows"), ownedGuiController::closeAll);
+        // Java players with Tideframe get the same shop on its screen: same catalog, same service, one call per click.
+        if (tideframeMenu != null) {
+            tideframeMenu.close();
+        }
+        ShopService ownedService = service;
+        ShopEconomyGateway ownedEconomy = economyGateway;
+        ShopCatalog ownedCatalog = catalog;
+        ShopTideframeMenu menu = new ShopTideframeMenu(() -> ownedCatalog, new ShopTideframeMenu.Actions() {
+            @Override public ShopTransactionResult buy(Player player, ShopEntry entry) { return ownedService.buy(player, entry); }
+            @Override public ShopTransactionResult sell(Player player, ShopEntry entry) { return ownedService.sell(player, entry); }
+            @Override public String balance(Player player) { return ownedEconomy.format(ownedEconomy.balance(player)); }
+            @Override public String format(double amount) { return ownedEconomy.format(amount); }
+        }, () -> tideframe.get());
+        this.tideframeMenu = menu;
+        registrations.ownCleanup(nextResourceId("shop-tideframe"), menu::close);
         if (npcListener != null) {
             org.bukkit.event.HandlerList.unregisterAll(npcListener);
         }
@@ -140,12 +160,38 @@ public final class ShopModule implements PluginModule {
             openBedrockCategories(player);
             return;
         }
-        guiController.openCategories(player);
+        ShopTideframeMenu menu = tideframeMenu;
+        if (menu != null && menu.openCategories(player, () -> openClassicCategories(player))) {
+            return;
+        }
+        openClassicCategories(player);
     }
 
     public void configurePlatform(ClientPlatformGateway platformGateway, BedrockFormSender bedrockFormSender) {
         this.platformGateway = platformGateway == null ? ignored -> ClientPlatform.JAVA : platformGateway;
         this.bedrockFormSender = bedrockFormSender;
+    }
+
+    /** Where the Tideframe screens come from (the Tideframe module, or none). Bedrock keeps its forms either way. */
+    public void configureTideframe(java.util.function.Supplier<dev.linqfy.bigCasares.modules.tideframe.TideframeUi> tideframe) {
+        this.tideframe = tideframe == null ? () -> dev.linqfy.bigCasares.modules.tideframe.TideframeUi.NONE : tideframe;
+    }
+
+    /** The inventory menu, when Tideframe could not open after all. */
+    private void openClassicCategories(Player player) {
+        if (enabled && guiController != null && player.isOnline()) {
+            tideframeNavigation.get().openClassic(player, () -> guiController.openCategories(player));
+        }
+    }
+
+    public void configureTideframeNavigation(java.util.function.Supplier<dev.linqfy.bigCasares.modules.tideframe.TideframeUi> navigation) {
+        this.tideframeNavigation = navigation;
+    }
+
+    private void openClassicCategory(Player player, ShopCategory category) {
+        if (enabled && guiController != null && player.isOnline()) {
+            tideframeNavigation.get().openClassic(player, () -> guiController.openCategory(player, category));
+        }
     }
 
     private void openNpcShop(Player player, String shopId) {
@@ -158,7 +204,10 @@ public final class ShopModule implements PluginModule {
             && bedrockFormSender != null) {
             openBedrockCategory(player, category);
         } else {
-            guiController.openCategory(player, category);
+            ShopTideframeMenu menu = tideframeMenu;
+            if (menu == null || !menu.openCategory(player, category, () -> openClassicCategory(player, category))) {
+                openClassicCategory(player, category);
+            }
         }
     }
 

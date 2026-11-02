@@ -24,6 +24,8 @@ atlassian-ide-plugin.xml
 
 # Package Files #
 *.jar
+# Tideframe's API (compileOnly, see tools/tideframe-api): the build and GitHub need it
+!/libs/tideframe-api-*.jar
 *.war
 *.nar
 *.ear

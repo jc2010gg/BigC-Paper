@@ -36,6 +36,11 @@ public final class MissionModule implements PluginModule {
     private PlayerMissionService playerMissionService;
     private VaultEconomyGateway economyGateway;
     private MissionHudController hudController;
+    private MissionTideframeMenu tideframeMenu;
+    private java.util.function.Supplier<dev.linqfy.bigCasares.modules.tideframe.TideframeUi> tideframeNavigation =
+        () -> dev.linqfy.bigCasares.modules.tideframe.TideframeUi.NONE;
+    private java.util.function.Supplier<dev.linqfy.bigCasares.modules.tideframe.TideframeUi> tideframe =
+        () -> dev.linqfy.bigCasares.modules.tideframe.TideframeUi.NONE;
     private boolean enabled;
     private RuntimeRegistrationScope compatibilityScope;
     private final Map<UUID, MissionPlayerState> stateCache = new LinkedHashMap<>();
@@ -74,8 +79,14 @@ public final class MissionModule implements PluginModule {
             this::nextWeeklyReset
         );
         this.hudController = new MissionHudController(this, economyGateway);
+        // Java players with Tideframe see the lists on its screen (read only); claiming stays in the inventory menu.
+        MissionTideframeMenu menu = new MissionTideframeMenu(this::getOrCreateState, this::countClaimables, economyGateway::format,
+            () -> tideframe.get(), (ticks, task) -> registrations.scheduleDelayed("tideframe-claims", task, ticks),
+            player -> openClassicHud(player, MissionHudView.CLAIMABLES), message -> plugin.getLogger().warning(message));
+        this.tideframeMenu = menu;
 
         scope.register("module-state", this::clearRuntimeState);
+        scope.register("tideframe-menu", menu::close);
         scope.register("hud-open-views", hudController::closeOpenViews);
         registrations.registerListener("mission-listener", new MissionListener(this));
         registrations.registerListener("hud-listener", hudController);
@@ -103,7 +114,31 @@ public final class MissionModule implements PluginModule {
             return;
         }
         revalidatePassiveMissions(player);
-        hudController.open(player, view);
+        // The lists open on Tideframe when the player can see it; claiming, and every other case, uses the inventory.
+        MissionTideframeMenu menu = tideframeMenu;
+        if (view != MissionHudView.CLAIMABLES && menu != null
+            && menu.open(player, view == MissionHudView.WEEKLY_LIST ? MissionScope.WEEKLY : MissionScope.DAILY,
+                () -> openClassicHud(player, view))) {
+            return;
+        }
+        openClassicHud(player, view);
+    }
+
+    /** The inventory menu, without Tideframe (its claim button, and the fallback when Tideframe cannot open). */
+    public void openClassicHud(Player player, MissionHudView view) {
+        if (!enabled || hudController == null) {
+            return;
+        }
+        tideframeNavigation.get().openClassic(player, () -> hudController.open(player, view));
+    }
+
+    public void configureTideframeNavigation(java.util.function.Supplier<dev.linqfy.bigCasares.modules.tideframe.TideframeUi> navigation) {
+        this.tideframeNavigation = navigation;
+    }
+
+    /** Where the Tideframe screens come from (the Tideframe module, or none). */
+    public void configureTideframe(java.util.function.Supplier<dev.linqfy.bigCasares.modules.tideframe.TideframeUi> tideframe) {
+        this.tideframe = tideframe == null ? () -> dev.linqfy.bigCasares.modules.tideframe.TideframeUi.NONE : tideframe;
     }
 
     public void claimAll(Player player) {

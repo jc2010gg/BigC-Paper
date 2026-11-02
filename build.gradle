@@ -42,6 +42,9 @@ dependencies {
     }
     compileOnly("me.clip:placeholderapi:2.12.3")
     compileOnly("org.geysermc.geyser:api:2.11.0-SNAPSHOT")
+    // Tideframe (optional UI plugin): only its API service and events, extracted from a Tideframe build by
+    // tools/tideframe-api/make-api-jar.ps1. Never packaged; on the server the classes come from Tideframe itself.
+    compileOnly(files("libs/tideframe-api-0.23.0.jar"))
     implementation("com.pocketcombats:openskill:1.1")
     implementation("net.dv8tion:JDA:6.4.1") {
         exclude group: "club.minnced", module: "opus-java"
