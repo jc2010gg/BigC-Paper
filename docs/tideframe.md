@@ -73,6 +73,28 @@ puede chocar con otros packs o con Iris/OptiFine.
   Si hay una camara bloqueada de otra pantalla, se solicita cerrarla antes de abrir un inventario por debajo.
 - La espera de medio segundo mas el ping evita que un doble clic sobre una categoria compre una fila recien cambiada.
 
+## Bedrock: formularios con el aspecto de Tideframe
+
+Bedrock no puede dibujar el HUD Java de Tideframe. Tienda y misiones siguen siendo formularios de Floodgate, pero
+el pack de Bedrock de BigCasares los dibuja con los colores de `bigc_tienda` y `bigc_misiones`.
+
+- `tools/tideframe-screens/build-bedrock-ui.mjs` lee esas dos pantallas y genera `resourcepack/bedrock/ui/`,
+  `textures/ui/bigc/` y `font/glyph_E5.png`. Si cambian los colores de las pantallas, volver a ejecutarlo.
+  `BedrockFormPackContractTest` falla si quedan desfasados.
+- Solo cambia el aspecto de los formularios cuyo título empieza con `BedrockFormStyle.TAG` (códigos de color
+  invisibles). El pack agrega una segunda fábrica a la pantalla de formularios de Bedrock: su panel tapa el
+  formulario normal solo con esa marca. Los demás formularios (otros plugins, Don Pollos) no cambian, y si el
+  panel no se dibujara, los botones normales de abajo responden igual.
+- Tienda: cada fila muestra el ícono de Bedrock del material cuando el pack propio de Bedrock lo tiene
+  (`geyser/bedrock-textures.txt`, `BedrockItemIcons`). Los objetos custom quedan sin ícono. El precio va en
+  dorado, o en rojo si no alcanza el saldo.
+- Misiones (antes, el cofre de inventario): pestañas Diarias/Semanales, cada misión con barra de progreso,
+  estado y premio, y "Reclamar" cuando hay algo para cobrar. Reclamar abre el menú de reclamos de siempre,
+  que es el que cobra. Las barras usan los caracteres `U+E500..U+E503` del pack; sin el pack se usan barras de texto.
+- El pack de Bedrock pasó a la versión 2.1.0 para que los clientes descarguen el nuevo. Cambiar el pack de
+  Bedrock requiere reiniciar el servidor.
+- No verificado en un cliente Bedrock real: ver la lista de `TODO.md`.
+
 ## Desarrollo
 
 ```powershell

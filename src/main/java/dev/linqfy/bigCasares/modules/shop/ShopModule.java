@@ -5,6 +5,7 @@ import dev.linqfy.bigCasares.module.PluginModule;
 import dev.linqfy.bigCasares.module.runtime.BukkitRuntimeRegistrations;
 import dev.linqfy.bigCasares.module.runtime.RuntimeRegistrationScope;
 import dev.linqfy.bigCasares.modules.bounties.BountyEconomyGateway;
+import dev.linqfy.bigCasares.platform.BedrockItemIcons;
 import dev.linqfy.bigCasares.platform.ClientPlatform;
 import dev.linqfy.bigCasares.platform.ClientPlatformGateway;
 import dev.linqfy.bigCasares.platform.ClientEntityPresentationRegistry;
@@ -220,7 +221,8 @@ public final class ShopModule implements PluginModule {
             "§7Elegí una categoría",
             economyGateway.format(economyGateway.balance(player)),
             catalog.categories().stream()
-                .map(category -> new ShopViewItem(category.id(), category.name(), "", "", null, true))
+                .map(category -> new ShopViewItem(category.id(), category.name(), "", "", null, true,
+                    BedrockItemIcons.path(category.icon()).orElse(null)))
                 .toList()
         );
         BukkitRuntimeRegistrations activeRegistrations = registrations;
@@ -246,7 +248,9 @@ public final class ShopModule implements PluginModule {
                 String.join("\n", entry.lore()),
                 economyGateway.format(entry.buyPrice()),
                 null,
-                economyGateway.has(player, entry.buyPrice())
+                economyGateway.has(player, entry.buyPrice()),
+                // A custom item has no vanilla icon on Bedrock: its row keeps the name and price only.
+                entry.customItemId() == null ? BedrockItemIcons.path(entry.material()).orElse(null) : null
             )).toList()
         );
         BukkitRuntimeRegistrations activeRegistrations = registrations;

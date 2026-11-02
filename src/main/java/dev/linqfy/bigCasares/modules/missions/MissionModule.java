@@ -4,6 +4,8 @@ import dev.linqfy.bigCasares.BigCasares;
 import dev.linqfy.bigCasares.module.PluginModule;
 import dev.linqfy.bigCasares.module.runtime.BukkitRuntimeRegistrations;
 import dev.linqfy.bigCasares.module.runtime.RuntimeRegistrationScope;
+import dev.linqfy.bigCasares.platform.ClientPlatform;
+import dev.linqfy.bigCasares.platform.ClientPlatformGateway;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -41,6 +43,10 @@ public final class MissionModule implements PluginModule {
         () -> dev.linqfy.bigCasares.modules.tideframe.TideframeUi.NONE;
     private java.util.function.Supplier<dev.linqfy.bigCasares.modules.tideframe.TideframeUi> tideframe =
         () -> dev.linqfy.bigCasares.modules.tideframe.TideframeUi.NONE;
+    private ClientPlatformGateway platforms = ignored -> ClientPlatform.JAVA;
+    private MissionBedrockForms bedrockForms;
+    /** Changes on every enable and disable, so an answer to a form sent before a reload is ignored. */
+    private long bedrockGeneration;
     private boolean enabled;
     private RuntimeRegistrationScope compatibilityScope;
     private final Map<UUID, MissionPlayerState> stateCache = new LinkedHashMap<>();
@@ -91,6 +97,7 @@ public final class MissionModule implements PluginModule {
         registrations.registerListener("mission-listener", new MissionListener(this));
         registrations.registerListener("hud-listener", hudController);
         registrations.scheduleRepeating("mission-state-flush", this::flushDirtyStates, 600L, 600L);
+        bedrockGeneration++;
         this.enabled = true;
     }
 
@@ -114,14 +121,53 @@ public final class MissionModule implements PluginModule {
             return;
         }
         revalidatePassiveMissions(player);
+        MissionScope scope = view == MissionHudView.WEEKLY_LIST ? MissionScope.WEEKLY : MissionScope.DAILY;
+        // Bedrock players get the lists as a form with the same look; claiming still uses the inventory.
+        if (view != MissionHudView.CLAIMABLES && openBedrock(player, scope)) {
+            return;
+        }
         // The lists open on Tideframe when the player can see it; claiming, and every other case, uses the inventory.
         MissionTideframeMenu menu = tideframeMenu;
         if (view != MissionHudView.CLAIMABLES && menu != null
-            && menu.open(player, view == MissionHudView.WEEKLY_LIST ? MissionScope.WEEKLY : MissionScope.DAILY,
-                () -> openClassicHud(player, view))) {
+            && menu.open(player, scope, () -> openClassicHud(player, view))) {
             return;
         }
         openClassicHud(player, view);
+    }
+
+    /** Bedrock: who is on Bedrock, and how to send them a form (Geyser). Without it they keep the inventory menu. */
+    public void configureBedrock(ClientPlatformGateway platforms, MissionBedrockForms forms) {
+        this.platforms = platforms == null ? ignored -> ClientPlatform.JAVA : platforms;
+        this.bedrockForms = forms;
+    }
+
+    private boolean openBedrock(Player player, MissionScope scope) {
+        MissionBedrockForms forms = bedrockForms;
+        UUID playerId = player.getUniqueId();
+        if (forms == null || economyGateway == null || platforms.resolvePlatform(playerId) != ClientPlatform.BEDROCK) {
+            return false;
+        }
+        MissionPlayerState state = getOrCreateState(player);
+        MissionBedrockForm.Page page = MissionBedrockForm.build(state, scope, countClaimables(state),
+            economyGateway::format, forms.glyphs(), Instant.now());
+        long generation = bedrockGeneration;
+        return forms.send(playerId, page.title(), page.content(), page.texts(),
+            index -> answerBedrock(playerId, generation, scope, page, index));
+    }
+
+    /** A button of the Bedrock form (on the server thread): tabs and missions show the list again, Reclamar the claims. */
+    private void answerBedrock(UUID playerId, long generation, MissionScope scope, MissionBedrockForm.Page page, int index) {
+        Player player = plugin.getServer().getPlayer(playerId);
+        if (!enabled || generation != bedrockGeneration || player == null || !player.isOnline()
+            || index < 0 || index >= page.buttons().size()) {
+            return;
+        }
+        switch (page.buttons().get(index).kind()) {
+            case DAILY -> openHud(player, MissionHudView.DAILY_LIST);
+            case WEEKLY -> openHud(player, MissionHudView.WEEKLY_LIST);
+            case MISSION -> openHud(player, scope == MissionScope.WEEKLY ? MissionHudView.WEEKLY_LIST : MissionHudView.DAILY_LIST);
+            case CLAIM -> openClassicHud(player, MissionHudView.CLAIMABLES);
+        }
     }
 
     /** The inventory menu, without Tideframe (its claim button, and the fallback when Tideframe cannot open). */
@@ -438,6 +484,7 @@ public final class MissionModule implements PluginModule {
         stateCache.clear();
         dirtyPlayers.clear();
         enabled = false;
+        bedrockGeneration++;
         hudController = null;
         playerMissionService = null;
         economyGateway = null;

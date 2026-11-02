@@ -147,5 +147,14 @@ Tideframe, no el dibujo ni los clics en un cliente. Ver [docs/tideframe.md](docs
 - [ ] Pulsar "Reclamar" y pedir `/shop` inmediatamente: no debe aparecer el inventario de reclamos,
   ni siquiera si la tienda se cierra antes de que venza la apertura diferida.
 - [ ] Planeando, con el gancho, en vehículo o en el aire: se abre el menú de inventario, no Tideframe.
-- [ ] Bedrock (Geyser/Floodgate): `/shop` sigue con formularios y `/misiones` con su menú; nada de Tideframe.
+- [ ] Bedrock (Geyser/Floodgate): `/shop` y `/misiones` abren formularios, nunca la pantalla Java de Tideframe.
+- [ ] Bedrock con el pack de BigCasares (versión 2.1.0) aceptado, en PC y en un teléfono: tienda y misiones se ven
+  con el panel oscuro de borde dorado, título dorado, filas con íconos y la X; se leen enteras y la lista se
+  desplaza. Comparar con capturas de las pantallas Java.
+- [ ] Bedrock: tocar una fila compra una vez; las pestañas Diarias/Semanales cambian la lista; "Reclamar" abre el
+  menú de reclamos y cobra una sola vez. Probar también con mando (el foco no debe quedar en botones ocultos).
+- [ ] Bedrock: un formulario de otro plugin o de Don Pollos conserva el aspecto de Bedrock.
+- [ ] Bedrock sin el pack (`geyser-integration.bedrock-resource-pack: false`): los formularios funcionan con el
+  aspecto de Bedrock, sin caracteres raros en el título y con barras de texto en las misiones.
+- [ ] Bedrock con otro pack que también cambie `server_form.json`: anotar si se pisan.
 - [ ] Editar una pantalla en el editor de Tideframe y reiniciar: la edición se conserva.
