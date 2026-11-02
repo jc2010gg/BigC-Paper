@@ -2,8 +2,8 @@
 // they read exactly as the editor writes them and stay editable there. The data comes from BigCasares at run time
 // (MissionTideframeMenu, ShopTideframeMenu): lists by setList and texts as player-global variables, so the screens
 // declare none of those variables (a local one would hide the value BigCasares sends). Buttons carry no Tideframe
-// action, BigCasares handles their clicks. The exceptions only close the menu with Tideframe's "close": the X, and
-// "Reclamar", whose click BigCasares also hears to open the inventory menu once the screen has closed.
+// action, BigCasares handles their clicks (Reclamar claims on the screen itself). The only exception is the X, which
+// closes the menu with Tideframe's "close".
 // Everything stays in the safe area (x 12..244, y 8..133 of 256 x 144).
 //
 //   node tools/tideframe-screens/build-screens.mjs <Tideframe folder>
@@ -71,12 +71,12 @@ const missions = page('bigc_misiones', 'Misiones', make => ({
     make('label', 'premio', '{item.premio}', [184, 234], 66, 9, { ...TEXT, textAlign: 'right', textColor: GREEN }),
     make('label', 'vacio', '{bigc_vacio}', [24, 232], 90, 9, { ...TEXT, textAlign: 'center', textColor: MUTED }),
     make('label', 'pendientes', '{bigc_pendientes}', [22, 150], 125, 9, { ...TEXT, textColor: GOLD }),
-    // Its own "close" closes this very screen in the click's step (a close asked by BigCasares would come a tick later).
-    make('button', 'reclamar', 'Reclamar', [178, 238], 125, 11, BUTTON, { background: true, border: true, shape: 'rounded', action: 'close' })
+    // No action of its own: BigCasares claims every ready reward and redraws the list in place.
+    make('button', 'reclamar', 'Reclamar', [178, 238], 125, 11, BUTTON, { background: true, border: true, shape: 'rounded' })
   ],
   logic: {
     mision: list('bigc_misiones', 6, 10), progreso: list('bigc_misiones', 6, 10), premio: list('bigc_misiones', 6, 10),
-    // "Reclamar" opens the inventory menu where rewards are claimed: shown only when there is something to claim.
+    // "Reclamar" claims the ready rewards: shown only when there is something to claim.
     reclamar: { 'visible-if': '{bigc_cobrables} > 0' }
   }
 }));
@@ -99,13 +99,15 @@ const shop = page('bigc_tienda', 'Tienda', make => ({
     make('button', 'volver', 'Volver', [18, 58], 127, 11, BUTTON, { background: true, border: true, shape: 'rounded' }),
     make('button', 'anterior', '<', [92, 108], 127, 11, BUTTON, { background: true, border: true, shape: 'rounded' }),
     make('label', 'pagina', '{bigc_tienda_pagina}', [109, 147], 127, 9, { ...TEXT, textAlign: 'center', textColor: MUTED }),
-    make('button', 'siguiente', '>', [148, 164], 127, 11, BUTTON, { background: true, border: true, shape: 'rounded' })
+    make('button', 'siguiente', '>', [148, 164], 127, 11, BUTTON, { background: true, border: true, shape: 'rounded' }),
+    // How many lots a click buys or sells: ×1, ×4, ×16 in turn (the rows show the price of that many).
+    make('button', 'cantidad', '{bigc_tienda_cantidad}', [178, 238], 127, 11, BUTTON, { background: true, border: true, shape: 'rounded' })
   ],
   logic: {
     fila: list('bigc_tienda', 6, 10), nombre: list('bigc_tienda', 6, 10), precio: list('bigc_tienda', 6, 10),
     // Shown only when they do something: the arrows with more than one page, "Volver" inside a category.
     anterior: { 'visible-if': '{bigc_tienda_paginas} > 1' }, siguiente: { 'visible-if': '{bigc_tienda_paginas} > 1' },
-    volver: { 'visible-if': '{bigc_tienda_productos} = 1' }
+    volver: { 'visible-if': '{bigc_tienda_productos} = 1' }, cantidad: { 'visible-if': '{bigc_tienda_productos} = 1' }
   }
 }));
 

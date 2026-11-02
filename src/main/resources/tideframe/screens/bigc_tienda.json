@@ -619,6 +619,48 @@
       "logic": {
         "visible-if": "{bigc_tienda_paginas} > 1"
       }
+    },
+    {
+      "id": "cantidad",
+      "text": "{bigc_tienda_cantidad}",
+      "x": 0.625,
+      "y": -0.764,
+      "width": 0.469,
+      "height": 0.153,
+      "kind": "button",
+      "action": "",
+      "shape": "rounded",
+      "border": true,
+      "messageCondition": null,
+      "background": true,
+      "image": null,
+      "style": {
+        "opacity": 1,
+        "fillColor": "#173b48",
+        "borderColor": "#8bdfc9",
+        "textColor": "#edf8f4",
+        "shadow": false,
+        "rotation": 0,
+        "radius": 0.16,
+        "outlineWidth": 1,
+        "hoverColor": "#53dbc1",
+        "hoverEffect": "glow",
+        "textAlign": "center",
+        "wrapWidth": 0,
+        "brightness": 1,
+        "textScale": 1,
+        "textOutline": null,
+        "textShadow": false,
+        "gradientColor": null,
+        "gradientDirection": "vertical",
+        "textGradient": null,
+        "textCase": "original"
+      },
+      "layer": 2,
+      "actionArea": null,
+      "logic": {
+        "visible-if": "{bigc_tienda_productos} = 1"
+      }
     }
   ],
   "presentation": {

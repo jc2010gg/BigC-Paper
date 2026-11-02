@@ -3,7 +3,6 @@ package dev.linqfy.bigCasares.modules.missions;
 import dev.linqfy.bigCasares.modules.tideframe.TideframeClick;
 import dev.linqfy.bigCasares.modules.tideframe.TideframeScreenHandler;
 import dev.linqfy.bigCasares.modules.tideframe.TideframeUi;
-import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
 import java.time.Duration;
@@ -16,16 +15,16 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.DoubleFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
- * The missions as a read-only Tideframe screen for Java players: the daily or weekly list with each mission's progress,
- * status and reward. It changes nothing: claiming stays in the inventory menu, which its "Reclamar" button opens once
- * Tideframe has closed. The texts come from the same state the inventory menu reads. The X keeps Tideframe's own close.
+ * The missions as a Tideframe screen for Java players: the daily or weekly list with each mission's progress, status
+ * and reward. "Reclamar" claims every ready reward through the module's own claim (the one the inventory menu uses,
+ * which pays only what is not claimed yet) and redraws the list in place. The texts come from the same state the
+ * inventory menu reads. The X keeps Tideframe's own close.
  */
 final class MissionTideframeMenu implements TideframeScreenHandler {
     static final String SCREEN = "bigc_misiones";
@@ -33,39 +32,22 @@ final class MissionTideframeMenu implements TideframeScreenHandler {
     /** Rows the screen's list shows; never more data rows than this (Tideframe's row index is then the data index). */
     static final int ROWS = 6;
 
-    /** Runs a task on the server thread {@code ticks} later. */
-    interface Later {
-        void after(long ticks, Runnable task);
-    }
-
     private final Function<Player, MissionPlayerState> states;
     private final Function<MissionPlayerState, Integer> claimables;
     private final DoubleFunction<String> money;
     private final Supplier<TideframeUi> ui;
-    private final Later later;
-    private final Consumer<Player> openClaims;
-    private final Consumer<String> warn;
+    private final Consumer<Player> claim;
     private final Map<UUID, MissionScope> tabs = new ConcurrentHashMap<>();
-    /** Players whose "Reclamar" is waiting for the screen's own close, within the click's step. */
-    private final Map<UUID, Long> claiming = new ConcurrentHashMap<>();
-    /** The installed screen's "Reclamar" did not close it: until BigCasares reloads, missions keep the inventory menu. */
-    private final AtomicBoolean reclamarBroken = new AtomicBoolean();
     private AutoCloseable registration = () -> { };
 
-    /**
-     * {@code openClaims}: opens the inventory menu of rewards to claim, at once. {@code warn}: tells the server log that
-     * the installed screen breaks the contract this menu relies on.
-     */
+    /** {@code claim}: pays the player's ready rewards at once (and tells them in chat). */
     MissionTideframeMenu(Function<Player, MissionPlayerState> states, Function<MissionPlayerState, Integer> claimables,
-                         DoubleFunction<String> money, Supplier<TideframeUi> ui, Later later, Consumer<Player> openClaims,
-                         Consumer<String> warn) {
+                         DoubleFunction<String> money, Supplier<TideframeUi> ui, Consumer<Player> claim) {
         this.states = Objects.requireNonNull(states, "states");
         this.claimables = Objects.requireNonNull(claimables, "claimables");
         this.money = Objects.requireNonNull(money, "money");
         this.ui = Objects.requireNonNull(ui, "ui");
-        this.later = Objects.requireNonNull(later, "later");
-        this.openClaims = Objects.requireNonNull(openClaims, "openClaims");
-        this.warn = Objects.requireNonNull(warn, "warn");
+        this.claim = Objects.requireNonNull(claim, "claim");
     }
 
     /**
@@ -74,7 +56,7 @@ final class MissionTideframeMenu implements TideframeScreenHandler {
      */
     boolean open(Player player, MissionScope scope, Runnable fallback) {
         TideframeUi tideframe = ui.get();
-        if (reclamarBroken.get() || !tideframe.canShow(player, SCREEN)) {
+        if (!tideframe.canShow(player, SCREEN)) {
             return false;
         }
         registration = tideframe.handle(SCREEN, this);
@@ -104,21 +86,11 @@ final class MissionTideframeMenu implements TideframeScreenHandler {
             case "diarias" -> show(tideframe, player, MissionScope.DAILY);
             case "semanales" -> show(tideframe, player, MissionScope.WEEKLY);
             case "reclamar" -> {
-                if (click.rightClick()) {
-                    return true;
+                // Left click only. Cancelled either way, so a screen still carrying the old "close" stays open.
+                if (!click.rightClick()) {
+                    claim.accept(player);
+                    show(tideframe, player, current);
                 }
-                // Not cancelled: the button's own "close" shuts this very screen in Tideframe, in this click's step, and
-                // the inventory menu opens from that close (closed()). BigCasares never closes it here: Tideframe would do
-                // that a tick later, possibly to a newer screen, with the inventory already open.
-                UUID playerId = player.getUniqueId();
-                long navigation = tideframe.navigationVersion(player);
-                claiming.put(playerId, navigation);
-                later.after(1, () -> {
-                    if (claiming.remove(playerId, navigation)) {
-                        reclamarNeverClosed(player);
-                    }
-                });
-                return false;
             }
             // The X ("cerrar") keeps Tideframe's own close action; closed() hears it.
             default -> {
@@ -130,38 +102,12 @@ final class MissionTideframeMenu implements TideframeScreenHandler {
 
     @Override
     public void closed(Player player) {
-        UUID playerId = player.getUniqueId();
-        tabs.remove(playerId);
-        Long navigation = claiming.remove(playerId);
-        if (navigation != null) {
-            later.after(2, () -> {
-                TideframeUi tideframe = ui.get();
-                // A newer request supersedes this claim even while queued, or if its screen already closed again.
-                if (player.isOnline() && navigation == tideframe.navigationVersion(player) && !tideframe.menuOpen(player)) {
-                    openClaims.accept(player);
-                }
-            });
-        }
-    }
-
-    /**
-     * The installed screen's "Reclamar" did not close it (edited without its "close"): nothing opens under the menu, the
-     * log says why, and missions use the inventory menu, where rewards are claimed, until BigCasares reloads.
-     */
-    private void reclamarNeverClosed(Player player) {
-        if (reclamarBroken.compareAndSet(false, true)) {
-            warn.accept("La pantalla " + SCREEN + " no se cerro con Reclamar: ese boton tiene que tener la accion close y la pantalla"
-                + " no debe volver a otra al cerrar (ver docs/tideframe.md). Misiones usa su menu de siempre hasta recargar BigCasares.");
-        }
-        if (player.isOnline()) {
-            player.sendMessage(ChatColor.YELLOW + "Cerrá este menú con la X y abrí de nuevo las misiones para reclamar.");
-        }
+        tabs.remove(player.getUniqueId());
     }
 
     /** BigCasares reloads: forget the open screens (the Tideframe module closes them) and stop receiving clicks. */
     void close() {
         tabs.clear();
-        claiming.clear();
         try {
             registration.close();
         } catch (Exception ignored) {

@@ -36,14 +36,14 @@ class ShopTideframeMenuTest {
         final List<String> calls = new ArrayList<>();
 
         @Override
-        public ShopTransactionResult buy(Player player, ShopEntry entry) {
-            calls.add("buy " + entry.id());
-            return ShopTransactionResult.success("Compraste " + entry.id() + " por $" + (int) entry.buyPrice() + ".", null);
+        public ShopTransactionResult buy(Player player, ShopEntry entry, int lots) {
+            calls.add("buy " + entry.id() + (lots > 1 ? " x" + lots : ""));
+            return ShopTransactionResult.success("Compraste " + entry.id() + " por $" + (int) (entry.buyPrice() * lots) + ".", null);
         }
 
         @Override
-        public ShopTransactionResult sell(Player player, ShopEntry entry) {
-            calls.add("sell " + entry.id());
+        public ShopTransactionResult sell(Player player, ShopEntry entry, int lots) {
+            calls.add("sell " + entry.id() + (lots > 1 ? " x" + lots : ""));
             return ShopTransactionResult.failure("No tenes suficientes items para vender.");
         }
 
@@ -87,7 +87,7 @@ class ShopTideframeMenuTest {
         look();
         assertTrue(ui.click(juan.player, SCREEN, "fila", 1, false));
         assertEquals(List.of("buy gancho"), service.calls, "one click, one purchase, of the row's product");
-        assertEquals("Compraste Gancho por $300.", ui.variable(juan.player, "bigc_tienda_aviso"));
+        assertEquals("Compraste Gancho por $300.", ui.variable(juan.player, "bigc_tienda_aviso"), "one lot: no quantity in the notice");
         assertEquals(List.of("§aCompraste gancho por $300."), juan.messages, "the chat says what the service says, as in the inventory menu");
 
         assertTrue(ui.click(juan.player, SCREEN, "fila", 0, true));
@@ -192,10 +192,45 @@ class ShopTideframeMenuTest {
     }
 
     @Test
+    void cantidadCyclesTheLotsAndOneClickMovesThemAsOneOperation() {
+        menu.openCategory(juan.player, current.get().category("herramientas").orElseThrow(), () -> { });
+        assertEquals("Cant. x1", ui.variable(juan.player, "bigc_tienda_cantidad"));
+        look();
+        assertTrue(ui.click(juan.player, SCREEN, "cantidad", -1, false));
+        assertEquals("Cant. x4", ui.variable(juan.player, "bigc_tienda_cantidad"));
+        assertEquals("Pico de hierro x4", names().get(0));
+        assertEquals("$480 / $120", ui.list(juan.player, LIST).get(0).get("precio"), "the prices of four lots");
+
+        assertTrue(ui.click(juan.player, SCREEN, "fila", 0, false), "right after the prices changed");
+        assertEquals(List.of(), service.calls, "waits like new rows: the old price was on screen a moment ago");
+        look();
+        ui.click(juan.player, SCREEN, "fila", 0, false);
+        ui.click(juan.player, SCREEN, "fila", 0, true);
+        assertEquals(List.of("buy pico x4", "sell pico x4"), service.calls, "one call each, for four lots");
+        assertEquals("No tenes suficientes items para vender.", ui.variable(juan.player, "bigc_tienda_aviso"));
+
+        ui.click(juan.player, SCREEN, "cantidad", -1, false);
+        assertEquals("Cant. x16", ui.variable(juan.player, "bigc_tienda_cantidad"));
+        ui.click(juan.player, SCREEN, "cantidad", -1, false);
+        assertEquals("Cant. x1", ui.variable(juan.player, "bigc_tienda_cantidad"), "and back to one");
+    }
+
+    @Test
+    void theQuantityStaysAcrossPagesAndCategories() {
+        menu.openCategory(juan.player, current.get().category("herramientas").orElseThrow(), () -> { });
+        ui.click(juan.player, SCREEN, "cantidad", -1, false);
+        ui.click(juan.player, SCREEN, "volver", -1, false);
+        look();
+        ui.click(juan.player, SCREEN, "fila", 0, false);
+        assertEquals("Piedra x4", names().get(0));
+        assertEquals("Cant. x4", ui.variable(juan.player, "bigc_tienda_cantidad"));
+    }
+
+    @Test
     void theBundledScreenMatchesWhatThisMenuSendsAndHandles() throws Exception {
         menu.openCategory(juan.player, current.get().category("herramientas").orElseThrow(), () -> { });
         var contract = dev.linqfy.bigCasares.testsupport.TideframeScreenContract.load(SCREEN);
-        contract.buttons(java.util.Set.of("fila", "volver", "anterior", "siguiente"), java.util.Set.of());
+        contract.buttons(java.util.Set.of("fila", "volver", "anterior", "siguiente", "cantidad"), java.util.Set.of());
         contract.lists(LIST, ShopTideframeMenu.ROWS, java.util.Set.of("fila", "nombre", "precio"));
         contract.texts(ui.variables.get(juan.id).keySet());
     }

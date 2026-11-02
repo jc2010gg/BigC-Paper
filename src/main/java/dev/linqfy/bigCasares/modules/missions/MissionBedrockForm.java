@@ -11,8 +11,8 @@ import java.util.function.DoubleFunction;
 
 /**
  * The missions as a Bedrock form, the counterpart of the Java Tideframe screen (bigc_misiones): Diarias and Semanales
- * tabs, every mission with its progress bar, status and reward, and "Reclamar" while something is ready. It changes
- * nothing itself: claiming stays in the inventory menu. The bars use the Bedrock pack's glyphs (font/glyph_E5.png) and
+ * tabs, every mission with its progress bar, status and reward, and "Reclamar" while something is ready. "Reclamar" pays
+ * through the module's own claim, as in the inventory menu. The bars use the Bedrock pack's glyphs (font/glyph_E5.png) and
  * fall back to plain bars when that pack is not sent.
  */
 final class MissionBedrockForm {

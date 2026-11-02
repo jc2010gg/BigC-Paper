@@ -2,7 +2,6 @@ package dev.linqfy.bigCasares.modules.missions;
 
 import dev.linqfy.bigCasares.testsupport.FakePlayer;
 import dev.linqfy.bigCasares.testsupport.FakeTideframeUi;
-import dev.linqfy.bigCasares.modules.tideframe.TideframeTestConnection;
 import org.bukkit.entity.Player;
 import org.junit.jupiter.api.Test;
 
@@ -35,7 +34,8 @@ class MissionTideframeMenuTest {
 
     private final FakeTideframeUi ui = new FakeTideframeUi();
     private final FakePlayer juan = new FakePlayer("juan");
-    private final List<String> claimsOpened = new ArrayList<>();
+    /** Who was paid: the fake claim marks every ready mission claimed, as the module's claim does. */
+    private final List<String> paid = new ArrayList<>();
     private MissionPlayerState state = new MissionPlayerState(juan.id, Instant.now(), Instant.now().plus(Duration.ofHours(5)),
         Instant.now().plus(Duration.ofDays(3)),
         byId(List.of(
@@ -44,20 +44,26 @@ class MissionTideframeMenuTest {
             assignment("peces", MissionScope.DAILY, "Pescar 5 peces", 5, 150, 5, true, true))),
         byId(List.of(assignment("diamantes", MissionScope.WEEKLY, "Juntar 20 diamantes", 20, 2000, 3, false, false))),
         null);
-    private final List<Runnable> later = new ArrayList<>();
-    private final List<String> warnings = new ArrayList<>();
-    private final MissionTideframeMenu menu = new MissionTideframeMenu(player -> state, ignored -> 1, amount -> "$" + (int) amount,
-        () -> ui, (ticks, task) -> later.add(task), player -> claimsOpened.add(player.getName()), warnings::add);
+    private final MissionTideframeMenu menu = new MissionTideframeMenu(player -> state, MissionTideframeMenuTest::ready,
+        amount -> "$" + (int) amount, () -> ui, this::claim);
+
+    private static int ready(MissionPlayerState of) {
+        return (int) of.dailyAssignments().values().stream()
+            .filter(a -> a.snapshot().completed() && !a.snapshot().claimed()).count();
+    }
+
+    private void claim(Player player) {
+        Map<String, MissionAssignment> daily = new LinkedHashMap<>();
+        state.dailyAssignments().forEach((id, a) -> daily.put(id, a.snapshot().completed() && !a.snapshot().claimed()
+            ? new MissionAssignment(a.definition(), new MissionProgressSnapshot(a.snapshot().progress(), true, true, Set.of()))
+            : a));
+        if (ready(state) > 0) paid.add(player.getName());
+        state = new MissionPlayerState(state.playerId(), state.generatedAt(), state.dailyResetsAt(), state.weeklyResetsAt(),
+            daily, state.weeklyAssignments(), null);
+    }
 
     private List<String> column(Player player, String field) {
         return ui.list(player, MissionTideframeMenu.LIST).stream().map(row -> row.get(field)).toList();
-    }
-
-    /** The server's next ticks: runs what was scheduled. */
-    private void tick() {
-        List<Runnable> due = new ArrayList<>(later);
-        later.clear();
-        due.forEach(Runnable::run);
     }
 
     @Test
@@ -81,60 +87,36 @@ class MissionTideframeMenuTest {
         assertEquals("Semanales", ui.variable(juan.player, "bigc_titulo"));
         assertTrue(ui.click(juan.player, SCREEN, "diarias", -1, false));
         assertEquals(3, column(juan.player, "titulo").size());
-        assertEquals(List.of(), claimsOpened, "read only: nothing was claimed");
+        assertEquals(List.of(), paid, "the tabs claim nothing");
     }
 
     @Test
-    void reclamarOpensTheInventoryMenuOnlyAfterTideframeClosedTheScreen() {
+    void reclamarPaysOnTheScreenAndRedrawsTheList() {
         menu.open(juan.player, MissionScope.DAILY, () -> { });
-        assertTrue(ui.click(juan.player, SCREEN, "reclamar", -1, true), "a right click is swallowed: its close runs on left clicks");
-        assertEquals(List.of(), later);
-        assertFalse(ui.click(juan.player, SCREEN, "reclamar", -1, false), "not cancelled: the button's own close shuts this very screen");
-        ui.closedByPlayer(juan.player, SCREEN); // Tideframe runs that close in the click's step
-        assertEquals(List.of(), claimsOpened, "not in Tideframe's close itself");
-        tick();
-        assertEquals(List.of("juan"), claimsOpened, "once, by the inventory menu's own claim");
-        assertEquals(List.of(), ui.closed, "BigCasares asked Tideframe for no close of its own");
-        assertEquals(List.of(), warnings);
-        assertFalse(ui.click(juan.player, SCREEN, "diarias", -1, false), "the closed screen keeps no view");
+        assertTrue(ui.click(juan.player, SCREEN, "reclamar", -1, true), "a right click is swallowed");
+        assertEquals(List.of(), paid);
+        assertTrue(ui.click(juan.player, SCREEN, "reclamar", -1, false), "cancelled: the screen stays open");
+        assertEquals(List.of("juan"), paid);
+        assertEquals(List.of("23/64", "Cobrada", "Cobrada"), column(juan.player, "progreso"));
+        assertEquals("Nada para cobrar", ui.variable(juan.player, "bigc_pendientes"));
+        assertEquals("0", ui.variable(juan.player, "bigc_cobrables"), "Reclamar hides itself");
+        assertEquals(List.of(), ui.closed, "BigCasares closes nothing");
     }
 
     @Test
-    void aTideframeMenuOpenedMeanwhileIsNeverCoveredByTheInventoryMenu() {
+    void aSecondReclamarPaysNothingMore() {
         menu.open(juan.player, MissionScope.DAILY, () -> { });
         ui.click(juan.player, SCREEN, "reclamar", -1, false);
-        ui.closedByPlayer(juan.player, SCREEN);
-        ui.showOther(juan.player, "visual_menu09");
-        tick();
-        assertEquals(List.of(), claimsOpened);
-        menu.open(juan.player, MissionScope.DAILY, () -> { });
         ui.click(juan.player, SCREEN, "reclamar", -1, false);
-        juan.online = false;
-        ui.closedByPlayer(juan.player, SCREEN);
-        tick();
-        assertEquals(List.of(), claimsOpened, "nor for a player who left");
+        assertEquals(List.of("juan"), paid, "the claim pays only what is still unclaimed");
     }
 
     @Test
-    void aScreenWhoseReclamarDoesNotCloseItHandsMissionsBackToTheInventoryMenu() {
-        FakePlayer ana = new FakePlayer("ana");
-        menu.open(juan.player, MissionScope.DAILY, () -> { });
-        menu.open(ana.player, MissionScope.DAILY, () -> { });
-        // No close follows the click: the screen was edited without Reclamar's "close" (or to go back to another one).
-        assertFalse(ui.click(juan.player, SCREEN, "reclamar", -1, false));
-        tick();
-        assertEquals(List.of(), claimsOpened, "nothing opens under the menu still up");
-        assertEquals(List.of(), ui.closed, "and BigCasares does not close it a tick late");
-        assertEquals(1, warnings.size(), "the log says what is wrong with the screen");
-        assertEquals(1, juan.messages.size(), "the player is told how to claim");
-        ui.closedByPlayer(juan.player, SCREEN); // the player closes it with the X later
-        tick();
-        assertEquals(List.of(), claimsOpened, "that later close is not taken for Reclamar's");
-        assertFalse(menu.open(juan.player, MissionScope.DAILY, () -> { }), "missions use the inventory menu now");
-        ui.click(ana.player, SCREEN, "reclamar", -1, false);
-        tick();
-        assertEquals(1, warnings.size(), "said once");
-        assertEquals(1, ana.messages.size(), "each player still told");
+    void reclamarOnTheWeeklyTabStaysOnIt() {
+        menu.open(juan.player, MissionScope.WEEKLY, () -> { });
+        ui.click(juan.player, SCREEN, "reclamar", -1, false);
+        assertEquals("Semanales", ui.variable(juan.player, "bigc_titulo"));
+        assertEquals(List.of("Juntar 20 diamantes"), column(juan.player, "titulo"));
     }
 
     @Test
@@ -170,7 +152,7 @@ class MissionTideframeMenuTest {
     void theBundledScreenMatchesWhatThisMenuSendsAndHandles() throws Exception {
         menu.open(juan.player, MissionScope.DAILY, () -> { });
         var contract = dev.linqfy.bigCasares.testsupport.TideframeScreenContract.load(SCREEN);
-        contract.buttons(Set.of("diarias", "semanales", "reclamar"), Set.of("reclamar"));
+        contract.buttons(Set.of("diarias", "semanales", "reclamar"), Set.of());
         contract.lists(MissionTideframeMenu.LIST, MissionTideframeMenu.ROWS, Set.of("mision", "progreso", "premio"));
         contract.texts(ui.variables.get(juan.id).keySet());
     }
@@ -185,36 +167,4 @@ class MissionTideframeMenuTest {
         assertFalse(ui.handlers.containsKey(SCREEN));
     }
 
-    @Test
-    void aNewerPendingOpenSupersedesTheDeferredClaimInventory() {
-        TideframeTestConnection connection = new TideframeTestConnection();
-        MissionTideframeMenu connected = new MissionTideframeMenu(player -> state, ignored -> 1, amount -> "$" + (int) amount,
-            connection::ui, connection::after, player -> claimsOpened.add(player.getName()), warnings::add);
-        connected.open(juan.player, MissionScope.DAILY, () -> { });
-        connection.tick();
-        connection.tick();
-        assertFalse(connection.click(juan.player, SCREEN, "reclamar", -1));
-        connection.closeWithCommand(juan.player, SCREEN, () -> { });
-        connection.tick();
-        connection.ui().open(juan.player, "bigc_tienda", ignored -> { });
-        connection.tick();
-        assertEquals(List.of(), claimsOpened, "a queued shop opening supersedes the old request before it is visible");
-    }
-
-    @Test
-    void aNewerScreenClosingAgainDoesNotResurrectAnOldClaimRequest() {
-        TideframeTestConnection connection = new TideframeTestConnection();
-        MissionTideframeMenu connected = new MissionTideframeMenu(player -> state, ignored -> 1, amount -> "$" + (int) amount,
-            connection::ui, connection::after, player -> claimsOpened.add(player.getName()), warnings::add);
-        connected.open(juan.player, MissionScope.DAILY, () -> { });
-        connection.tick();
-        connection.tick();
-        connection.click(juan.player, SCREEN, "reclamar", -1);
-        connection.closeWithCommand(juan.player, SCREEN,
-            () -> connection.ui().open(juan.player, "bigc_tienda", ignored -> { }));
-        connection.tick();
-        connection.closeWithCommand(juan.player, "bigc_tienda", () -> { });
-        connection.tick();
-        assertEquals(List.of(), claimsOpened, "the newer request wins even after its menu has closed");
-    }
 }

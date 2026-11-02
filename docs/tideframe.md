@@ -61,8 +61,13 @@ puede chocar con otros packs o con Iris/OptiFine.
 ## Uso y autoridad
 
 - `/tideframe` y sus subcomandos pertenecen a BigCasares. Permisos `tideframe.use` (true) y `tideframe.edit` (op).
-- `/misiones`: listas diarias/semanales de solo lectura; Reclamar usa el inventario y servicio originales.
+- `/misiones`: listas diarias/semanales. Reclamar cobra en la misma pantalla con el cobro de siempre del
+  modulo (`MissionModule.claimAll`, que solo paga lo no cobrado) y redibuja la lista; el boton no tiene accion
+  de Tideframe y el clic se cancela. Una pantalla editada que todavia tenga `close` en Reclamar no se cierra.
 - `/shop` y NPC: categorias, paginas, compra izquierda y venta derecha, siempre a traves de `ShopService`.
+  El boton "Cant." alterna x1, x4 y x16 lotes: cada clic compra o vende esa cantidad como una sola operacion
+  (un cobro o un pago, todo o nada) y las filas muestran el precio de esa cantidad. Cambiar la cantidad cuenta
+  como filas nuevas para la espera anti doble clic.
 - El resto de menus de BigCasares no se convierte automaticamente: incluir todo el motor no equivale a redisenar
   todas las pantallas del plugin.
 - Java usa Tideframe cuando la pantalla y su pack estan listos. Bedrock conserva los formularios existentes;
@@ -89,8 +94,8 @@ el pack de Bedrock de BigCasares los dibuja con los colores de `bigc_tienda` y `
   (`geyser/bedrock-textures.txt`, `BedrockItemIcons`). Los objetos custom quedan sin ícono. El precio va en
   dorado, o en rojo si no alcanza el saldo.
 - Misiones (antes, el cofre de inventario): pestañas Diarias/Semanales, cada misión con barra de progreso,
-  estado y premio, y "Reclamar" cuando hay algo para cobrar. Reclamar abre el menú de reclamos de siempre,
-  que es el que cobra. Las barras usan los caracteres `U+E500..U+E503` del pack; sin el pack se usan barras de texto.
+  estado y premio, y "Reclamar" cuando hay algo para cobrar. Reclamar cobra con el mismo cobro que Java y
+  vuelve a mostrar la lista. La cantidad de la tienda todavía es solo de Java. Las barras usan los caracteres `U+E500..U+E503` del pack; sin el pack se usan barras de texto.
 - El pack de Bedrock pasó a la versión 2.1.0 para que los clientes descarguen el nuevo. Cambiar el pack de
   Bedrock requiere reiniciar el servidor.
 - No verificado en un cliente Bedrock real: ver la lista de `TODO.md`.

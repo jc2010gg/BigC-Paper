@@ -620,7 +620,7 @@
       "width": 0.469,
       "height": 0.153,
       "kind": "button",
-      "action": "close",
+      "action": "",
       "shape": "rounded",
       "border": true,
       "messageCondition": null,

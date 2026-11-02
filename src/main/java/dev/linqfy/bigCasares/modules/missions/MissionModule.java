@@ -85,10 +85,9 @@ public final class MissionModule implements PluginModule {
             this::nextWeeklyReset
         );
         this.hudController = new MissionHudController(this, economyGateway);
-        // Java players with Tideframe see the lists on its screen (read only); claiming stays in the inventory menu.
+        // Java players with Tideframe see the lists on its screen; its Reclamar uses the same claim as the inventory menu.
         MissionTideframeMenu menu = new MissionTideframeMenu(this::getOrCreateState, this::countClaimables, economyGateway::format,
-            () -> tideframe.get(), (ticks, task) -> registrations.scheduleDelayed("tideframe-claims", task, ticks),
-            player -> openClassicHud(player, MissionHudView.CLAIMABLES), message -> plugin.getLogger().warning(message));
+            () -> tideframe.get(), this::claimAll);
         this.tideframeMenu = menu;
 
         scope.register("module-state", this::clearRuntimeState);
@@ -122,7 +121,7 @@ public final class MissionModule implements PluginModule {
         }
         revalidatePassiveMissions(player);
         MissionScope scope = view == MissionHudView.WEEKLY_LIST ? MissionScope.WEEKLY : MissionScope.DAILY;
-        // Bedrock players get the lists as a form with the same look; claiming still uses the inventory.
+        // Bedrock players get the lists as a form with the same look, Reclamar included.
         if (view != MissionHudView.CLAIMABLES && openBedrock(player, scope)) {
             return;
         }
@@ -155,7 +154,7 @@ public final class MissionModule implements PluginModule {
             index -> answerBedrock(playerId, generation, scope, page, index));
     }
 
-    /** A button of the Bedrock form (on the server thread): tabs and missions show the list again, Reclamar the claims. */
+    /** A button of the Bedrock form (on the server thread): tabs and missions show the list again, Reclamar pays and redraws. */
     private void answerBedrock(UUID playerId, long generation, MissionScope scope, MissionBedrockForm.Page page, int index) {
         Player player = plugin.getServer().getPlayer(playerId);
         if (!enabled || generation != bedrockGeneration || player == null || !player.isOnline()
@@ -166,7 +165,10 @@ public final class MissionModule implements PluginModule {
             case DAILY -> openHud(player, MissionHudView.DAILY_LIST);
             case WEEKLY -> openHud(player, MissionHudView.WEEKLY_LIST);
             case MISSION -> openHud(player, scope == MissionScope.WEEKLY ? MissionHudView.WEEKLY_LIST : MissionHudView.DAILY_LIST);
-            case CLAIM -> openClassicHud(player, MissionHudView.CLAIMABLES);
+            case CLAIM -> {
+                claimAll(player);
+                openHud(player, scope == MissionScope.WEEKLY ? MissionHudView.WEEKLY_LIST : MissionHudView.DAILY_LIST);
+            }
         }
     }
 

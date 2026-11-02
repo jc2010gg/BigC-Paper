@@ -128,8 +128,8 @@ public final class ShopModule implements PluginModule {
         ShopEconomyGateway ownedEconomy = economyGateway;
         ShopCatalog ownedCatalog = catalog;
         ShopTideframeMenu menu = new ShopTideframeMenu(() -> ownedCatalog, new ShopTideframeMenu.Actions() {
-            @Override public ShopTransactionResult buy(Player player, ShopEntry entry) { return ownedService.buy(player, entry); }
-            @Override public ShopTransactionResult sell(Player player, ShopEntry entry) { return ownedService.sell(player, entry); }
+            @Override public ShopTransactionResult buy(Player player, ShopEntry entry, int lots) { return ownedService.buy(player, entry, lots); }
+            @Override public ShopTransactionResult sell(Player player, ShopEntry entry, int lots) { return ownedService.sell(player, entry, lots); }
             @Override public String balance(Player player) { return ownedEconomy.format(ownedEconomy.balance(player)); }
             @Override public String format(double amount) { return ownedEconomy.format(amount); }
         }, () -> tideframe.get());

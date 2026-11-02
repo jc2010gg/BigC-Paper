@@ -136,7 +136,11 @@ Tideframe, no el dibujo ni los clics en un cliente. Ver [docs/tideframe.md](docs
   sí. Anotar si la espera se nota con el ping real.
 - [ ] Recargar la tienda o BigCasares con la pantalla abierta: no se compra nada desde una vista vieja.
 - [ ] Misiones: progreso, "¡Lista!" y "Cobrada" coinciden con el menú de inventario; "Reclamar" (clic
-  izquierdo) cierra la pantalla, abre ese menú y cobra una sola vez; el clic derecho no hace nada.
+  izquierdo) cobra una sola vez sin cerrar la pantalla, la fila pasa a "Cobrada" y el botón desaparece; un doble
+  clic no paga dos veces; el clic derecho no hace nada.
+- [ ] Tienda: "Cant." pasa por x1, x4 y x16; las filas muestran nombre y precio de esa cantidad; un clic
+  compra o vende todos los lotes con un solo movimiento de saldo, o ninguno si no alcanza el saldo o los ítems.
+  Probar con inventario casi lleno (lo que no entra cae al piso) y con objetos custom.
 - [ ] `/shop` y `/misiones` dos veces seguidas con la pantalla abierta: los botones siguen funcionando.
 - [ ] `/tideframe reload` con una pantalla `bigc_*` abierta: no vuelve sola, el jugador ve el aviso y el
   comando la abre de nuevo. Lo mismo con `/tideframe open bigc_tienda`.
@@ -144,15 +148,13 @@ Tideframe, no el dibujo ni los clics en un cliente. Ver [docs/tideframe.md](docs
 - [ ] Cambiar `tideframe/engine/config.yml` y recargar el motor: el estado real de `pack.send` y el UUID del pack
   deben decidir la elegibilidad; nunca aceptar solamente el pack de BigCasares como prueba del pack de UI.
 - [ ] Una pantalla editada con un comando `/shop` al cerrar: la tienda siguiente conserva sus filas y clics.
-- [ ] Pulsar "Reclamar" y pedir `/shop` inmediatamente: no debe aparecer el inventario de reclamos,
-  ni siquiera si la tienda se cierra antes de que venza la apertura diferida.
 - [ ] Planeando, con el gancho, en vehículo o en el aire: se abre el menú de inventario, no Tideframe.
 - [ ] Bedrock (Geyser/Floodgate): `/shop` y `/misiones` abren formularios, nunca la pantalla Java de Tideframe.
 - [ ] Bedrock con el pack de BigCasares (versión 2.1.0) aceptado, en PC y en un teléfono: tienda y misiones se ven
   con el panel oscuro de borde dorado, título dorado, filas con íconos y la X; se leen enteras y la lista se
   desplaza. Comparar con capturas de las pantallas Java.
-- [ ] Bedrock: tocar una fila compra una vez; las pestañas Diarias/Semanales cambian la lista; "Reclamar" abre el
-  menú de reclamos y cobra una sola vez. Probar también con mando (el foco no debe quedar en botones ocultos).
+- [ ] Bedrock: tocar una fila compra una vez; las pestañas Diarias/Semanales cambian la lista; "Reclamar" cobra
+  una sola vez y vuelve a mostrar la lista. Probar también con mando (el foco no debe quedar en botones ocultos).
 - [ ] Bedrock: un formulario de otro plugin o de Don Pollos conserva el aspecto de Bedrock.
 - [ ] Bedrock sin el pack (`geyser-integration.bedrock-resource-pack: false`): los formularios funcionan con el
   aspecto de Bedrock, sin caracteres raros en el título y con barras de texto en las misiones.

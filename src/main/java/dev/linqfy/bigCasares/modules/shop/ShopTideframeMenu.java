@@ -36,12 +36,16 @@ final class ShopTideframeMenu implements TideframeScreenHandler {
      * animation.
      */
     static final long SETTLE_NANOS = 500_000_000L;
+    /** Lots a click buys or sells, in the order the "cantidad" button goes through them. */
+    static final List<Integer> QUANTITIES = List.of(1, 4, 16);
 
     /** What the shop service does for the screen (ShopService and the economy, or fakes in tests). */
     interface Actions {
-        ShopTransactionResult buy(Player player, ShopEntry entry);
+        /** {@code lots} times the entry, as one operation (one charge). */
+        ShopTransactionResult buy(Player player, ShopEntry entry, int lots);
 
-        ShopTransactionResult sell(Player player, ShopEntry entry);
+        /** {@code lots} times the entry, as one operation (all or nothing, one payment). */
+        ShopTransactionResult sell(Player player, ShopEntry entry, int lots);
 
         String balance(Player player);
 
@@ -49,10 +53,10 @@ final class ShopTideframeMenu implements TideframeScreenHandler {
     }
 
     /**
-     * What one player sees: the categories ({@code categoryId} null) or a category, one page, with each row's id, and
-     * when ({@link System#nanoTime()}) those rows were first sent.
+     * What one player sees: the categories ({@code categoryId} null) or a category, one page, with each row's id, the
+     * lots a click moves, and when ({@link System#nanoTime()}) those rows and prices were first sent.
      */
-    record View(String categoryId, int page, List<String> rowIds, long shownAt) {
+    record View(String categoryId, int page, List<String> rowIds, int lots, long shownAt) {
         View {
             rowIds = List.copyOf(rowIds);
         }
@@ -93,7 +97,7 @@ final class ShopTideframeMenu implements TideframeScreenHandler {
         }
         registration = tideframe.handle(SCREEN, this);
         UUID playerId = player.getUniqueId();
-        tideframe.open(player, SCREEN, () -> show(tideframe, player, categoryId, 0, ""), opened -> {
+        tideframe.open(player, SCREEN, () -> show(tideframe, player, categoryId, 0, 1, ""), opened -> {
             if (!opened) {
                 views.remove(playerId);
                 if (player.isOnline()) {
@@ -117,11 +121,12 @@ final class ShopTideframeMenu implements TideframeScreenHandler {
                 if (view.categoryId() == null) {
                     close(tideframe, player);
                 } else {
-                    show(tideframe, player, null, 0, "");
+                    show(tideframe, player, null, 0, view.lots(), "");
                 }
             }
-            case "anterior" -> show(tideframe, player, view.categoryId(), view.page() - 1, "");
-            case "siguiente" -> show(tideframe, player, view.categoryId(), view.page() + 1, "");
+            case "anterior" -> show(tideframe, player, view.categoryId(), view.page() - 1, view.lots(), "");
+            case "siguiente" -> show(tideframe, player, view.categoryId(), view.page() + 1, view.lots(), "");
+            case "cantidad" -> show(tideframe, player, view.categoryId(), view.page(), next(view.lots()), "");
             // The X ("cerrar") keeps Tideframe's own close action; closed() hears it.
             default -> {
                 return false;
@@ -157,24 +162,32 @@ final class ShopTideframeMenu implements TideframeScreenHandler {
         ShopCatalog current = catalog.get();
         if (view.categoryId() == null) {
             if (current.category(id).isPresent()) {
-                show(tideframe, player, id, 0, "");
+                show(tideframe, player, id, 0, view.lots(), "");
             } else {
-                show(tideframe, player, null, 0, "Esa categoría ya no está.");
+                show(tideframe, player, null, 0, view.lots(), "Esa categoría ya no está.");
             }
             return;
         }
         Optional<ShopEntry> entry = current.entry(view.categoryId(), id);
         if (entry.isEmpty()) {
-            show(tideframe, player, view.categoryId(), view.page(), "Ese producto ya no está.");
+            show(tideframe, player, view.categoryId(), view.page(), view.lots(), "Ese producto ya no está.");
             return;
         }
-        // One click, one operation, by the same service and rules as the inventory menu (and its same chat message).
+        // One click, one operation (of the lots shown), by the same service and rules as the inventory menu.
         boolean sell = click.rightClick();
-        ShopTransactionResult result = sell ? actions.sell(player, entry.get()) : actions.buy(player, entry.get());
+        int lots = view.lots();
+        ShopTransactionResult result = sell ? actions.sell(player, entry.get(), lots) : actions.buy(player, entry.get(), lots);
         player.sendMessage((result.success() ? ChatColor.GREEN : ChatColor.RED) + result.message());
-        String notice = !result.success() ? result.message() : (sell ? "Vendiste " : "Compraste ") + name(entry.get()) + " por "
-            + plain(actions.format(sell ? entry.get().sellPrice() : entry.get().buyPrice())) + ".";
-        show(tideframe, player, view.categoryId(), view.page(), notice);
+        String notice = !result.success() ? result.message() : (sell ? "Vendiste " : "Compraste ") + name(entry.get())
+            + (lots > 1 ? " (x" + lots + ")" : "") + " por "
+            + plain(actions.format((sell ? entry.get().sellPrice() : entry.get().buyPrice()) * lots)) + ".";
+        show(tideframe, player, view.categoryId(), view.page(), lots, notice);
+    }
+
+    /** The next quantity after {@code lots}, back to the first after the last. */
+    static int next(int lots) {
+        int at = QUANTITIES.indexOf(lots);
+        return QUANTITIES.get((at + 1) % QUANTITIES.size());
     }
 
     private boolean settled(Player player, View view) {
@@ -193,24 +206,26 @@ final class ShopTideframeMenu implements TideframeScreenHandler {
     }
 
     /** Sends the page's rows and texts, and remembers exactly what the player is shown. */
-    private void show(TideframeUi tideframe, Player player, String categoryId, int page, String notice) {
+    private void show(TideframeUi tideframe, Player player, String categoryId, int page, int lots, String notice) {
         ShopCatalog current = catalog.get();
         Optional<ShopCategory> category = categoryId == null ? Optional.empty() : current.category(categoryId);
         if (categoryId != null && category.isEmpty()) {
-            show(tideframe, player, null, 0, "Esa categoría ya no está.");
+            show(tideframe, player, null, 0, lots, "Esa categoría ya no está.");
             return;
         }
         int total = category.map(c -> c.entries().size()).orElse(current.categories().size());
         int pages = Math.max(1, (total + ROWS - 1) / ROWS);
         int shown = Math.max(0, Math.min(page, pages - 1));
-        List<Map<String, String>> rows = category.isPresent() ? entryRows(category.get(), shown) : categoryRows(current, shown);
+        List<Map<String, String>> rows = category.isPresent() ? entryRows(category.get(), shown, lots) : categoryRows(current, shown);
         List<String> ids = rows.stream().map(row -> row.get("id")).toList();
         String shownCategory = category.map(ShopCategory::id).orElse(null);
-        // The same rows again (a purchase's notice) are already in front of the player: they do not wait again.
+        // The same rows and prices again (a purchase's notice) are already in front of the player: they do not wait
+        // again. A new quantity changes every price shown, so it waits like new rows.
         View before = views.get(player.getUniqueId());
         long shownAt = before != null && Objects.equals(before.categoryId(), shownCategory) && before.rowIds().equals(ids)
-            ? before.shownAt() : clock.getAsLong();
-        views.put(player.getUniqueId(), new View(shownCategory, shown, ids, shownAt));
+            && before.lots() == lots ? before.shownAt() : clock.getAsLong();
+        views.put(player.getUniqueId(), new View(shownCategory, shown, ids, lots, shownAt));
+        tideframe.setVariable(player, "bigc_tienda_cantidad", "Cant. x" + lots);
         tideframe.setList(player, LIST, rows);
         tideframe.setVariable(player, "bigc_tienda_titulo", category.map(c -> plain(c.name())).orElse("Categorías"));
         tideframe.setVariable(player, "bigc_tienda_ayuda", category.isPresent()
@@ -238,16 +253,18 @@ final class ShopTideframeMenu implements TideframeScreenHandler {
         return rows;
     }
 
-    private List<Map<String, String>> entryRows(ShopCategory category, int page) {
+    private List<Map<String, String>> entryRows(ShopCategory category, int page, int lots) {
         List<Map<String, String>> rows = new ArrayList<>();
         List<ShopEntry> entries = category.entries();
         for (int i = page * ROWS; i < Math.min(entries.size(), (page + 1) * ROWS); i++) {
             ShopEntry entry = entries.get(i);
             Map<String, String> row = new LinkedHashMap<>();
             row.put("id", entry.id());
-            row.put("nombre", entry.amount() > 1 ? name(entry) + " x" + entry.amount() : name(entry));
-            // Buy / sell, as the inventory menu's lore; "—" when it cannot be sold.
-            row.put("precio", plain(actions.format(entry.buyPrice())) + " / " + (entry.sellPrice() > 0 ? plain(actions.format(entry.sellPrice())) : "—"));
+            int items = entry.amount() * lots;
+            row.put("nombre", items > 1 ? name(entry) + " x" + items : name(entry));
+            // Buy / sell of the quantity chosen, as the inventory menu's lore; "—" when it cannot be sold.
+            row.put("precio", plain(actions.format(entry.buyPrice() * lots)) + " / "
+                + (entry.sellPrice() > 0 ? plain(actions.format(entry.sellPrice() * lots)) : "—"));
             rows.add(row);
         }
         return rows;
