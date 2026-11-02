@@ -126,8 +126,8 @@ unidad por selección. El premio pertenece al ganador registrado, no a toda la p
 Pendiente de prueba manual: los tests cubren reglas, contratos de pantalla y que BigCasares cargue sin
 Tideframe, no el dibujo ni los clics en un cliente. Ver [docs/tideframe.md](docs/tideframe.md).
 
-- [ ] Servidor de prueba con BigCasares, BetterModel, Vault con una economía y Tideframe; anotar versiones y
-  confirmar en el log "Tideframe conectado" y la instalación de `bigc_misiones` y `bigc_tienda`.
+- [ ] Servidor de prueba con BigCasares, BetterModel y Vault con una economía; SIN Tideframe.jar externo.
+  Confirmar el modulo integrado y las pantallas en `plugins/BigCasares/tideframe/engine/screens`.
 - [ ] Java con los dos packs aceptados: `/misiones` y `/shop` abren las pantallas de Tideframe, se leen enteras
   a la escala de GUI habitual y la X cierra. Sin el pack de Tideframe se abren los menús de inventario.
 - [ ] Tienda: un clic izquierdo compra una vez y uno derecho vende una vez (saldo e inventario antes y
@@ -141,8 +141,8 @@ Tideframe, no el dibujo ni los clics en un cliente. Ver [docs/tideframe.md](docs
 - [ ] `/tideframe reload` con una pantalla `bigc_*` abierta: no vuelve sola, el jugador ve el aviso y el
   comando la abre de nuevo. Lo mismo con `/tideframe open bigc_tienda`.
 - [ ] Tideframe con `pack.send: false`: el log lo avisa y se abren los menús de siempre.
-- [ ] Cambiar ese archivo a `pack.send: true` sin reiniciar Tideframe y recargar solo BigCasares:
-  debe seguir usando inventarios hasta reiniciar el servidor completo.
+- [ ] Cambiar `tideframe/engine/config.yml` y recargar el motor: el estado real de `pack.send` y el UUID del pack
+  deben decidir la elegibilidad; nunca aceptar solamente el pack de BigCasares como prueba del pack de UI.
 - [ ] Una pantalla editada con un comando `/shop` al cerrar: la tienda siguiente conserva sus filas y clics.
 - [ ] Pulsar "Reclamar" y pedir `/shop` inmediatamente: no debe aparecer el inventario de reclamos,
   ni siquiera si la tienda se cierra antes de que venza la apertura diferida.

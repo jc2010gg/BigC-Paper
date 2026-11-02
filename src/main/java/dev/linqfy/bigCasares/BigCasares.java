@@ -102,12 +102,6 @@ public final class BigCasares extends JavaPlugin {
     private final ReloadCoordinator reloadCoordinator = new ReloadCoordinator();
 
     @Override
-    public void onLoad() {
-        // Before any plugin enables: Tideframe bakes its first pack from its screens folder while enabling.
-        TideframeUiModule.installBeforeTideframeStarts(this);
-    }
-
-    @Override
     public void onEnable() {
         saveDefaultConfig();
         try {

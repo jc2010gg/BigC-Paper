@@ -12,10 +12,10 @@ import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const tideframe = process.argv[2];
-if (!tideframe) throw Error('Usage: node tools/tideframe-screens/build-screens.mjs <Tideframe folder>');
+const editor = process.argv[2] ? join(resolve(process.argv[2]), 'editor')
+  : join(dirname(fileURLToPath(import.meta.url)), '..', 'tideframe-editor');
 const { createScreen, upgradeLogic, addElement, setElementLogic, validateScreen, serializeScreen } =
-  await import(pathToFileURL(join(resolve(tideframe), 'editor', 'model.mjs')).href);
+  await import(pathToFileURL(join(editor, 'model.mjs')).href);
 
 // ----- look -----
 const GOLD = '#ffd966', WHITE = '#f2f6f8', SOFT = '#bfe9ff', MUTED = '#8fb3c4', GREEN = '#7ee08a', INK = '#05080c';

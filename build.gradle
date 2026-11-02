@@ -42,9 +42,6 @@ dependencies {
     }
     compileOnly("me.clip:placeholderapi:2.12.3")
     compileOnly("org.geysermc.geyser:api:2.11.0-SNAPSHOT")
-    // Tideframe (optional UI plugin): only its API service and events, extracted from a Tideframe build by
-    // tools/tideframe-api/make-api-jar.ps1. Never packaged; on the server the classes come from Tideframe itself.
-    compileOnly(files("libs/tideframe-api-0.23.0.jar"))
     implementation("com.pocketcombats:openskill:1.1")
     implementation("net.dv8tion:JDA:6.4.1") {
         exclude group: "club.minnced", module: "opus-java"
@@ -61,6 +58,46 @@ dependencies {
     testImplementation(platform("org.junit:junit-bom:5.11.4"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+    maxHeapSize = '4g'
+}
+
+// Reuse Paper's exact Adventure artifacts without replacing the existing Spigot test ItemStack factory.
+def tideframeTestAdventure = configurations.compileClasspath.incoming.artifactView {
+    componentFilter { id ->
+        id instanceof org.gradle.api.artifacts.component.ModuleComponentIdentifier && id.group == 'net.kyori'
+    }
+}.files
+dependencies {
+    testImplementation(tideframeTestAdventure)
+}
+
+// BigCasares' item tests need Spigot's standalone factory; the embedded UI tests exercise Paper audience methods.
+sourceSets {
+    test {
+        java.exclude 'dev/tideframe/**'
+    }
+    tideframeTest {
+        java.srcDir 'src/test/java'
+        java.include 'dev/tideframe/**'
+        resources.srcDir 'src/test/resources'
+        compileClasspath = sourceSets.main.output + configurations.compileClasspath + configurations.testCompileClasspath
+        runtimeClasspath = output + sourceSets.main.output + configurations.compileClasspath + configurations.testRuntimeClasspath
+    }
+}
+
+tasks.register('tideframeTest', Test) {
+    description = 'Runs the source-built Tideframe engine suite against the matching Paper API.'
+    group = 'verification'
+    testClassesDirs = sourceSets.tideframeTest.output.classesDirs
+    classpath = sourceSets.tideframeTest.runtimeClasspath
+    mustRunAfter(tasks.named('test'))
+}
+tasks.named('check') {
+    dependsOn(tasks.named('tideframeTest'))
 }
 
 // Plugins del servidor (no se compilan con BigCasares): runServer los pone en build/run-server/plugins.
@@ -275,6 +312,30 @@ tasks.named("jar") {
         into("seed-content")
     }
 }
+
+tasks.register('verifyEmbeddedTideframe') {
+    group = 'verification'
+    description = 'Checks that the one BigCasares JAR contains the source-built UI engine, not an external plugin JAR.'
+    dependsOn(tasks.named('jar'))
+    doLast {
+        def archive = tasks.named('jar').get().archiveFile.get().asFile
+        new java.util.zip.ZipFile(archive).withCloseable { zip ->
+            ['dev/tideframe/TideframePlugin.class', 'dev/tideframe/TideframeApi.class',
+             'tideframe/engine/config.yml', 'tideframe/engine/boss-face.png',
+             'tideframe/engine/item-icons.tsv', 'META-INF/tideframe/LICENSE'].each { path ->
+                if (zip.getEntry(path) == null) throw new GradleException("Missing embedded Tideframe resource: ${path}")
+            }
+            def entries = zip.entries().toList()*.name
+            if (entries.findAll { it.endsWith('plugin.yml') } != ['plugin.yml']) {
+                throw new GradleException('BigCasares must be the only plugin descriptor')
+            }
+            if (entries.any { it.contains('tideframe-api-') && it.endsWith('.jar') }) {
+                throw new GradleException('A precompiled Tideframe API JAR was packaged')
+            }
+        }
+    }
+}
+tasks.named('check') { dependsOn(tasks.named('verifyEmbeddedTideframe')) }
 
 processResources {
     def props = [version: version]

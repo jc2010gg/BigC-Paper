@@ -46,9 +46,9 @@ modules:
   tideframe-ui:
     enabled: true
 
-# Pantallas de Tideframe (plugin opcional, aparte): solo para jugadores de Java con el pack de Tideframe cargado.
-# Sin Tideframe, en Bedrock, o si la pantalla no se puede abrir, se usan los menus de siempre. Las compras,
-# premios y permisos siguen en BigCasares. Las pantallas bigc_* se instalan una vez en plugins/Tideframe/screens.
+# Tideframe integrado en este JAR: solo para jugadores de Java con su pack cargado.
+# Con el modulo apagado, en Bedrock o si la pantalla falla, se usan los menus de siempre.
+# Datos del motor y pantallas: plugins/BigCasares/tideframe/engine. No requiere Tideframe.jar.
 tideframe-ui:
   # Misiones diarias y semanales (solo para ver; reclamar sigue en el menu de inventario).
   missions: true

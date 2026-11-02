@@ -13,13 +13,12 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * {@link TideframeBridge} over Tideframe's registered {@code TideframeApi} service. One of the two classes that name
- * Tideframe types (with {@link TideframeEventRelay}): it is only loaded through {@link TideframeLink} once the Tideframe
- * plugin is enabled, so BigCasares runs without Tideframe.
+ * Tideframe types (with {@link TideframeEventRelay}). Its provider is the source-built engine owned by BigCasares.
  */
 final class TideframeApiBridge implements TideframeBridge {
     private final TideframeApi api;
 
-    private TideframeApiBridge(TideframeApi api) {
+    TideframeApiBridge(TideframeApi api) {
         this.api = Objects.requireNonNull(api, "api");
     }
 
@@ -43,7 +42,7 @@ final class TideframeApiBridge implements TideframeBridge {
 
     @Override
     public boolean isPackLoaded(Player player) {
-        return api.isPackLoaded(player);
+        return api instanceof dev.tideframe.TideframePlugin engine ? engine.isOwnPackLoaded(player) : api.isPackLoaded(player);
     }
 
     @Override

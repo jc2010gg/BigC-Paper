@@ -1,105 +1,107 @@
-# Pantallas de Tideframe (opcional)
+# Tideframe integrado en BigCasares
 
-BigCasares puede mostrar algunos menús con **Tideframe**, un plugin aparte de interfaz (menú a pantalla completa con cursor, dibujado con el resource pack de Tideframe). Es solo presentación: los precios, el dinero, los objetos, los premios y los permisos siguen en los servicios de BigCasares. Sin Tideframe, todo funciona igual que antes.
+Tideframe es un modulo interno (`tideframe-ui`) compilado desde sus fuentes dentro del mismo JAR de BigCasares.
+No se instala `Tideframe.jar` ni se necesita un JAR binario de su API para compilar. BigCasares sigue siendo el
+unico `JavaPlugin` y el unico descriptor `plugin.yml`. El modulo puede desactivarse como los demas.
 
-Módulo: `tideframe-ui` (`dev.linqfy.bigCasares.modules.tideframe`).
+## Codigo y recursos
 
-## Qué pantallas hay
+- `src/main/java/dev/tideframe/`: motor original, API, eventos, camara, cursor, HUD, logica, serializacion,
+  generador de pack, importadores, HTTP, observadores, demostraciones y compatibilidad.
+- `src/main/java/dev/linqfy/bigCasares/modules/tideframe/`: lifecycle y adaptacion a misiones/tienda.
+- `src/main/resources/tideframe/engine/`: configuracion y recursos del motor; no reemplazan `config.yml` de BigCasares.
+- `src/main/resources/tideframe/screens/`: pantallas BigCasares.
+- `src/test/java/dev/tideframe/`, `src/test/resources/`: pruebas y fixtures del motor original.
+- `tools/tideframe-editor/`: fuentes, recursos y pruebas del editor web.
+- `META-INF/tideframe/`: licencia MIT y procedencia de recursos conservadas en el JAR.
 
-| Pantalla | Se abre con | Qué hace | Qué no hace |
-| --- | --- | --- | --- |
-| `bigc_misiones` | `/misiones` (y lo que hoy abre las listas de misiones) | Misiones diarias o semanales: progreso, estado y premio. "Reclamar" cierra la pantalla y abre el menú de inventario de siempre | No reclama: el cobro sigue en el menú de inventario, por `claimAll` |
-| `bigc_tienda` | `/shop` y los NPC de tienda | Categorías y productos por páginas. Clic izquierdo compra, derecho vende | Nada fuera de `ShopService`: cada clic es una sola llamada al servicio, con las mismas reglas que el menú de inventario |
+El paquete `dev.tideframe` conserva nombres e IDs para compatibilidad de API. `TideframePlugin` ya no hereda
+de `JavaPlugin`: recibe al host BigCasares. Los listeners, comandos y tareas tienen un scope del motor;
+apagarlo no desregistra servicios o listeners ajenos. Al parar se restauran camaras, cierran sesiones,
+observadores, HTTP y ejecutores, y se retiran sus tareas y servicio API.
 
-## Cuándo se usa Tideframe y cuándo el menú de siempre
+## Instalacion y datos
 
-Se abre la pantalla de Tideframe solo si se cumple todo esto; si no, se abre el menú de siempre (inventario, o formulario en Bedrock):
+1. Instalar solamente el JAR final de BigCasares, ademas de sus dependencias habituales (BetterModel, etc.).
+2. No instalar tambien el plugin independiente Tideframe: el modulo rechaza ese conflicto para evitar
+   duplicar comandos, proveedores y packs.
+3. El motor crea `plugins/BigCasares/tideframe/engine/config.yml`. Sus carpetas `screens`, `images`, `sounds`,
+   `packs` y archivos de intercambio con el editor quedan bajo ese mismo directorio.
+4. Si se migra una instalacion independiente, con el servidor detenido conservar una copia de sus datos y
+   trasladar configuracion, pantallas editadas, imagenes y sonidos a esa carpeta antes del primer arranque.
+   No se borran ni sobrescriben automaticamente los archivos de `plugins/Tideframe`.
 
-- Tideframe está instalado, activo y registró su servicio `TideframeApi`.
-- Tideframe ya tiene la pantalla `bigc_*` cargada.
-- El jugador es de **Java**. En Bedrock siguen los formularios de BigCasares: los HUD y fuentes de Tideframe no existen en Bedrock.
-- El jugador cargó **el pack de Tideframe** (su propio UUID, no cualquier pack). Para eso Tideframe tiene que mandar su propio pack (`pack.send: true`, lo normal): con `pack.send: false` cualquier pack cargado cuenta como el suyo, así que BigCasares no puede comprobarlo y usa siempre los menús de siempre (lo avisa en el log). Si cambiás `pack.send`, reiniciá el servidor: el archivo puede decir `true` antes de que Tideframe lo recargue. Una vez que BigCasares lo vio en `false`, conserva esa protección incluso entre recargas y reconexiones del módulo; solo un reinicio completo la restablece. Un `config.yml` de Tideframe que no se puede leer también cuenta como `false`.
-- No está planeando, en un vehículo, en el aire (gancho, caída) ni muerto: el menú de Tideframe congela la cámara.
+Las pantallas `bigc_misiones` y `bigc_tienda` se instalan antes de arrancar el motor para entrar en su primer pack.
+Una pantalla editada se conserva; una version bundled nueva queda aparte para comparar.
 
-Si la pantalla no llega a abrir (pack rechazado, tiempo agotado, desconexión), se abre el menú de siempre.
-Si todavía queda otra pantalla de Tideframe abierta, el jugador recibe un aviso para cerrarla primero;
-el inventario clásico espera ese cierre para no quedar debajo de una cámara bloqueada. Pedir otro menú
-cancela ese fallback pendiente. Una pantalla anterior con el mismo id no cuenta como apertura exitosa.
-Las aperturas clásicas de tienda y misiones también registran navegación y esperan el cierre de esa cámara,
-incluso si su pantalla individual está desactivada en la configuración de Tideframe.
+## Configuracion
 
-## Autoridad y doble efecto
-
-- Los botones de las pantallas `bigc_*` no tienen acciones de Tideframe. BigCasares atiende el clic y lo cancela en Tideframe, así nada se cobra ni se entrega dos veces.
-- Las únicas excepciones usan la acción `close` de Tideframe, que solo cierra el menú:
-  - la X;
-  - "Reclamar" en misiones. BigCasares escucha su clic izquierdo y no cierra nada por su cuenta. El menú de inventario se abre recién con el cierre que hace Tideframe en el mismo paso del clic, y nunca encima de otro menú de Tideframe. El clic derecho no hace nada.
-  - Si una pantalla editada no se cierra con "Reclamar" (le sacaron el `close`, o la pantalla vuelve a otra al cerrar), no se abre nada: el jugador ve un aviso, el log explica qué falta y misiones usa el menú de siempre hasta recargar BigCasares.
-- Las pantallas `bigc_*` solo las abre BigCasares. Si Tideframe intenta abrir una por su cuenta, BigCasares cancela la apertura y le avisa al jugador que se abre con su comando: abriría sin datos y sin las comprobaciones de BigCasares. Pasa en estos casos:
-  - al reabrir menús después de recargar (`editor.reopen-after-reload`);
-  - con `/tideframe open`;
-  - con "Abrir en el juego" del editor.
-- Abrir de nuevo `/shop` o `/misiones` con la pantalla abierta conserva lo que se acaba de mandar. Tideframe avisa que la pantalla vieja fue reemplazada, pero mantiene las variables y listas del jugador. Lo que BigCasares recuerda de cada jugador se olvida solo cuando se cierra toda la interfaz de Tideframe.
-- Los datos de una nueva apertura se preparan durante su evento de apertura, no durante el comando que la solicita. Así, un comando `/shop` ejecutado al cerrar otra pantalla no pierde su vista con la limpieza anterior. Las escrituras de variables y listas conservan el envío diferido de la API de Tideframe.
-- "Reclamar" recuerda la navegación en la que se pulsó: cualquier apertura posterior lo cancela, aunque todavía esté en cola o esa otra pantalla ya se haya cerrado. No reaparece un inventario de reclamos sobre la tienda.
-- Una fila de la lista se resuelve contra lo que ese jugador estaba viendo: el id de la fila se busca de nuevo en el catálogo actual. Si el producto ya no está, no se compra nada.
-- Las listas nunca tienen más filas de las que muestra la pantalla (6), así que la fila tocada es siempre el producto de esa página.
-- Cuando cambian las filas (al abrir, entrar a una categoría, cambiar de página o volver), los clics en ellas se ignoran durante medio segundo más el ping del jugador. Así el segundo clic de un doble clic sobre una categoría no compra el producto que quedó en esa fila. Mientras las filas no cambian, cada clic compra o vende al instante, como en el menú de inventario.
-- Los textos y listas se mandan como variables globales del jugador con prefijo `bigc_`; las pantallas no declaran esas variables (una variable local las taparía).
-
-## Instalación
-
-1. Poner Tideframe en `plugins/` (integración preparada contra su API 0.23.0 para Paper 26.2; pendiente de prueba real). BigCasares lo declara en `softdepend`.
-2. Al arrancar el servidor, en la carga de BigCasares (antes de que se active cualquier plugin), BigCasares copia `bigc_misiones.json` y `bigc_tienda.json` a `plugins/Tideframe/screens/`, solo si cambiaron. Así entran en el pack que arma Tideframe al activarse. Si Tideframe se activa más tarde (por ejemplo, con un gestor de plugins), las carga solo (con `editor.auto-reload: true`) o con `/tideframe reload`, y rearma su pack una vez.
-3. Cada jugador de Java recibe dos packs: el de BigCasares y el de Tideframe, cada uno con su UUID. No se pisan: Tideframe solo usa su namespace `tideframe` y BigCasares no trae shaders ni fuentes. Para jugadores remotos, los dos publicadores necesitan una URL pública (`pack.public-url` en Tideframe y la del publicador de BigCasares).
-
-Mantener `display.auto-fit: false` en Tideframe en producción: el shader de ajuste es experimental, solo para clientes 26.2, y puede chocar con otros packs o con Iris y OptiFine.
-
-## Configuración (`config.yml`)
+En la configuracion principal de BigCasares:
 
 ```yaml
 modules:
   tideframe-ui:
-    enabled: true     # false: nunca se usa Tideframe
+    enabled: true
 tideframe-ui:
-  missions: true      # misiones con Tideframe
-  shop: true          # tienda con Tideframe
+  missions: true
+  shop: true
 ```
 
-Un `config.yml` existente no recibe estas claves solo; sin ellas, todo queda en `true`.
+La configuracion especifica del motor vive en `tideframe/engine/config.yml`, dentro de los datos de BigCasares.
+Conserva las opciones originales: display, sonidos, demos, disparadores, editor y publicacion del pack.
+Por defecto el servidor HTTP escucha en loopback, puerto 8136. Para jugadores remotos el operador debe configurar
+`pack.public-url` con una URL alcanzable; incluir el motor en el JAR no hace publica una URL local.
+No se cambian routers, puertos del sistema ni firewall automaticamente.
 
-## Editar las pantallas
+El motor usa su estado real de `pack.send` y el UUID del pack cargado, no el archivo de otro plugin.
+Con `pack.send: false`, misiones y tienda conservan sus menus clasicos: no se asume que cualquier pack incluya
+las fuentes de Tideframe. Mantener `display.auto-fit: false` salvo pruebas controladas: ese shader experimental
+puede chocar con otros packs o con Iris/OptiFine.
 
-Las pantallas se editan en el editor web de Tideframe como cualquier página suya. BigCasares nunca pisa una pantalla editada: si trae una versión nueva, la deja en `plugins/BigCasares/tideframe/<id>.bundled.json` para comparar. `plugins/BigCasares/tideframe/installed-screens.properties` guarda qué versión escribió.
+## Uso y autoridad
 
-Al editar, conservar los ids que usa BigCasares:
+- `/tideframe` y sus subcomandos pertenecen a BigCasares. Permisos `tideframe.use` (true) y `tideframe.edit` (op).
+- `/misiones`: listas diarias/semanales de solo lectura; Reclamar usa el inventario y servicio originales.
+- `/shop` y NPC: categorias, paginas, compra izquierda y venta derecha, siempre a traves de `ShopService`.
+- El resto de menus de BigCasares no se convierte automaticamente: incluir todo el motor no equivale a redisenar
+  todas las pantallas del plugin.
+- Java usa Tideframe cuando la pantalla y su pack estan listos. Bedrock conserva los formularios existentes;
+  no se afirma que el HUD Java funcione en Bedrock.
+- Planeando, en vehiculo, en el aire, muerto o sin pack: no se fija la camara y se utiliza el menu clasico.
+- Una apertura prepara su vista en el evento de apertura. Cierres anteriores no borran la vista nueva.
+- Solo la navegacion mas reciente puede abrir su fallback o reclamos, incluidos menus clasicos y aperturas en cola.
+  Si hay una camara bloqueada de otra pantalla, se solicita cerrarla antes de abrir un inventario por debajo.
+- La espera de medio segundo mas el ping evita que un doble clic sobre una categoria compre una fila recien cambiada.
 
-- Misiones: `diarias`, `semanales`, `reclamar` (con acción `close`) y la lista `bigc_misiones`.
-- Tienda: `fila`, `volver`, `anterior`, `siguiente` y la lista `bigc_tienda`.
-- En las dos, la X `cerrar` con acción `close`.
-
-El "Revisar" del editor avisa que esos botones "no hacen nada": es lo esperado, porque los atiende BigCasares.
-
-Para abrir estas pantallas desde otro menú de Tideframe, poné en el botón la acción de comando (`command:/shop` o `command:/misiones`), no `open:bigc_tienda`: BigCasares cancela las aperturas que no pidió.
-
-Las pantallas de origen se generan con el modelo del editor de Tideframe:
+## Desarrollo
 
 ```powershell
-node tools/tideframe-screens/build-screens.mjs <carpeta de Tideframe>
+.\gradlew.bat --no-daemon clean build
+node --test tools/tideframe-editor/*.test.mjs
+node tools/tideframe-screens/build-screens.mjs
 ```
 
-## Compilar contra Tideframe
+El editor y su servidor se ejecutan desde `tools/tideframe-editor`; consultar su README para argumentos.
+Las demostraciones originales se conservan; habilitarlas aumenta el tiempo de generacion y el peso del pack.
+El runtime integrado usa el scheduler Paper de BigCasares, no se anuncia soporte Folia del plugin completo.
 
-`libs/tideframe-api-0.23.0.jar` (unos 7 KB) tiene solo la interfaz `TideframeApi` y los eventos de clic, apertura y cierre, sacados de una compilación de Tideframe. Es `compileOnly`: no entra en el JAR de BigCasares. En el servidor esas clases las pone el plugin Tideframe. Solo dos clases nombran tipos de Tideframe (`TideframeApiBridge`, `TideframeEventRelay`); se cargan por reflexión después de encontrar Tideframe activo, y un test lo comprueba. Para regenerar el JAR de la API con otra versión de Tideframe:
+## Verificacion automatica (2026-11-02)
 
-```powershell
-.\tools\tideframe-api\make-api-jar.ps1 -Classes <Tideframe>\build\classes\java\main -Version <versión>
-```
+Con JDK 25.0.3, `.\gradlew.bat --offline --no-daemon clean build` termino en `BUILD SUCCESSFUL` (12 min 49 s)
+y ejecuto `test`, `tideframeTest` y `verifyEmbeddedTideframe`:
 
-Al conectar, BigCasares comprueba que la API instalada tenga cada método que usa, con los mismos tipos. Si no coincide, lo avisa en el log y se usan los menús de siempre. Si igual una llamada falla más tarde, deja de usar Tideframe hasta el próximo arranque.
+- `build/test-results/test` (BigCasares): 1323 tests, 0 fallos, 0 errores, 0 omitidos.
+- `build/test-results/tideframeTest` (motor): 591 tests en las 107 clases de prueba, 0 fallos, 0 errores y
+  1 omitido. `BossPortraitTest.symbolicLinkCannotReadPortraitOutsideConfiguredDirectory` se aborta cuando el
+  sistema no permite crear enlaces simbolicos; en la PC de la verificacion (Windows) faltaba ese privilegio,
+  asi que ese caso no quedo verificado.
+- Editor: `node --test "tools/tideframe-editor/*.test.mjs"` con Node 24: 322 tests, 0 fallos.
+- JAR `build/libs/BigCasares-0.0.1.jar`: 299 clases `dev/tideframe`, un unico `plugin.yml` (BigCasares, sin
+  `softdepend` de Tideframe), ningun JAR anidado, y `META-INF/tideframe/LICENSE` y `ASSETS.md` presentes.
 
-## Límites
+## Validacion pendiente
 
-- Las filas muestran texto: la tienda de Tideframe no dibuja el ícono de cada producto (el menú de inventario sí).
-- Un texto más largo que su columna se corta, salvo con la versión de Tideframe que achica el texto que no entra.
-- **No probado todavía en clientes reales**: Java (pantallas, escala, clics, packs juntos) y la caída a formularios en Bedrock. La lista está en `TODO.md`.
+Las pruebas comprueban logica, recursos, contratos y empaquetado. No demuestran renderizado ni interaccion real.
+Falta verificar en un servidor Paper con clientes Java y Bedrock: entrada con ambos packs, pantalla, clics,
+camara y restauracion, recarga, generacion/publicacion HTTP y carga representativa. No desplegar en produccion
+sin completar esa aceptacion. La checklist esta en `TODO.md`.

@@ -41,7 +41,7 @@ final class TideframeScreenInstaller {
     }
 
     /**
-     * {@code screens}: Tideframe's plugins/Tideframe/screens; {@code ownFolder}: BigCasares' folder for the state file
+     * {@code screens}: the engine's plugins/BigCasares/tideframe/engine/screens; {@code ownFolder}: BigCasares' folder for the state file
      * and the bundled copies of screens kept as edited.
      */
     static List<Result> install(Path screens, Path ownFolder, List<BundledScreen> bundled) throws IOException {

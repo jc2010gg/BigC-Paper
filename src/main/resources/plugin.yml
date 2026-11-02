@@ -4,7 +4,7 @@ main: dev.linqfy.bigCasares.BigCasares
 api-version: '26.2'
 load: POSTWORLD
 depend: [BetterModel]
-softdepend: [Vault, PlaceholderAPI, Geyser-Spigot, floodgate, Tideframe]
+softdepend: [Vault, PlaceholderAPI, Geyser-Spigot, floodgate, ItemsAdder]
 authors: [ linqfy ]
 description: BigCasares core plugin for server modules
 libraries:
@@ -12,6 +12,9 @@ libraries:
   - net.dv8tion:JDA:6.4.1
 
 commands:
+  tideframe:
+    description: Manage the embedded Tideframe UI module
+    usage: /tideframe
   bigcasares:
     description: BigCasares management command
     usage: /<command> give <item_id> [player] [amount]
@@ -125,6 +128,10 @@ commands:
 
 
 permissions:
+  tideframe.use:
+    default: true
+  tideframe.edit:
+    default: op
   bigcasares.donpollos.admin:
     description: Manage Don Pollos (spawn, boss, cities, dances and items)
     default: op
