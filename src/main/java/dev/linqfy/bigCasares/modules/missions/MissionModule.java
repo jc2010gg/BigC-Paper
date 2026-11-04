@@ -52,6 +52,11 @@ public final class MissionModule implements PluginModule {
     private final Map<UUID, MissionPlayerState> stateCache = new LinkedHashMap<>();
     private final Set<UUID> dirtyPlayers = new LinkedHashSet<>();
     private final MissionReadyNotices readyNotices = new MissionReadyNotices();
+    private BukkitRuntimeRegistrations registrations;
+    private volatile MissionPlaceholderValues placeholderValues;
+    private Object placeholderExpansion;
+    /** When each Bedrock player first tapped "Cambiar las diarias" ({@link System#nanoTime()}). */
+    private final Map<UUID, Long> bedrockRerollTaps = new java.util.concurrent.ConcurrentHashMap<>();
 
     public MissionModule(BigCasares plugin) {
         this.plugin = plugin;
@@ -88,7 +93,7 @@ public final class MissionModule implements PluginModule {
         this.hudController = new MissionHudController(this, economyGateway);
         // Java players with Tideframe see the lists on its screen; its Reclamar uses the same claim as the inventory menu.
         MissionTideframeMenu menu = new MissionTideframeMenu(this::getOrCreateState, this::countClaimables, economyGateway::format,
-            () -> tideframe.get(), this::claimAll);
+            () -> tideframe.get(), this::claimAll, this::rerollCheck, this::rerollDaily, System::nanoTime);
         this.tideframeMenu = menu;
 
         scope.register("module-state", this::clearRuntimeState);
@@ -97,6 +102,8 @@ public final class MissionModule implements PluginModule {
         registrations.registerListener("mission-listener", new MissionListener(this));
         registrations.registerListener("hud-listener", hudController);
         registrations.scheduleRepeating("mission-state-flush", this::flushDirtyStates, 600L, 600L);
+        this.registrations = registrations;
+        registerPlaceholders(scope, registrations);
         bedrockGeneration++;
         this.enabled = true;
     }
@@ -148,8 +155,10 @@ public final class MissionModule implements PluginModule {
             return false;
         }
         MissionPlayerState state = getOrCreateState(player);
+        Long firstTap = bedrockRerollTaps.get(playerId);
+        boolean confirming = firstTap != null && System.nanoTime() - firstTap <= MissionReroll.CONFIRM_NANOS;
         MissionBedrockForm.Page page = MissionBedrockForm.build(state, scope, countClaimables(state),
-            economyGateway::format, forms.glyphs(), Instant.now());
+            economyGateway::format, forms.glyphs(), Instant.now(), rerollCheck(player), confirming);
         long generation = bedrockGeneration;
         return forms.send(playerId, page.title(), page.content(), page.texts(),
             index -> answerBedrock(playerId, generation, scope, page, index));
@@ -169,6 +178,16 @@ public final class MissionModule implements PluginModule {
             case CLAIM -> {
                 claimAll(player);
                 openHud(player, scope == MissionScope.WEEKLY ? MissionHudView.WEEKLY_LIST : MissionHudView.DAILY_LIST);
+            }
+            case REROLL -> {
+                // The first tap asks to confirm (the form shows again saying so); a second one within seconds changes them.
+                Long first = bedrockRerollTaps.remove(playerId);
+                if (first != null && System.nanoTime() - first <= MissionReroll.CONFIRM_NANOS) {
+                    rerollDaily(player);
+                } else {
+                    bedrockRerollTaps.put(playerId, System.nanoTime());
+                }
+                openHud(player, MissionHudView.DAILY_LIST);
             }
         }
     }
@@ -212,23 +231,18 @@ public final class MissionModule implements PluginModule {
         dirtyPlayers.remove(player.getUniqueId());
     }
 
+    /** Whether {@code player} may change their daily missions now (see {@link MissionReroll}). */
+    MissionReroll.Check rerollCheck(Player player) {
+        int hour = plugin.getConfig().getInt("mission-system.reset.daily-hour", 0);
+        return MissionReroll.check(getOrCreateState(player), MissionReroll.periodStart(Instant.now(), hour, ZoneId.systemDefault()));
+    }
+
     public void rerollDaily(Player player) {
         MissionPlayerState state = getOrCreateState(player);
-
-        if (state.dailyRerolledAt() != null) {
-            ZoneId zone = ZoneId.systemDefault();
-            int hour = plugin.getConfig().getInt("mission-system.reset.daily-hour", 0);
-            LocalDateTime nowLdt = LocalDateTime.now(zone);
-            LocalDateTime periodStart = nowLdt.withHour(hour).withMinute(0).withSecond(0).withNano(0);
-            if (periodStart.isAfter(nowLdt)) {
-                periodStart = periodStart.minusDays(1);
-            }
-            Instant periodStartInstant = periodStart.atZone(zone).toInstant();
-
-            if (!state.dailyRerolledAt().isBefore(periodStartInstant)) {
-                player.sendMessage("§cYa usaste tu rerol diario. Espera al reinicio diario.");
-                return;
-            }
+        MissionReroll.Check check = rerollCheck(player);
+        if (check != MissionReroll.Check.ALLOWED) {
+            player.sendMessage(MissionReroll.refusal(check));
+            return;
         }
 
         MissionPlayerState rerolled = playerMissionService.rerollDailyAssignments(player.getUniqueId(), state, Instant.now());
@@ -351,6 +365,83 @@ public final class MissionModule implements PluginModule {
         announceReady(player, state, updated);
     }
 
+    /**
+     * A moment after joining (so the join messages do not bury it), tells the player what they have to claim, if
+     * anything.
+     */
+    void greet(Player player) {
+        BukkitRuntimeRegistrations active = registrations;
+        if (!enabled || active == null) {
+            return;
+        }
+        active.scheduleDelayed("mission-greeting", () -> {
+            if (!enabled || !player.isOnline() || economyGateway == null) {
+                return;
+            }
+            MissionPlayerState state = getOrCreateState(player);
+            MissionReadyNotices.greeting(countClaimables(state), MissionOrder.pendingReward(state), economyGateway::format)
+                .ifPresent(player::sendMessage);
+        }, GREETING_DELAY_TICKS);
+    }
+
+    /**
+     * {@code %bigc_...%} for scoreboards, when PlaceholderAPI is installed: the expansion reads snapshots this module
+     * refreshes every two seconds on the server thread.
+     */
+    private void registerPlaceholders(RuntimeRegistrationScope scope, BukkitRuntimeRegistrations registrations) {
+        if (plugin.getServer().getPluginManager().getPlugin("PlaceholderAPI") == null) {
+            return;
+        }
+        MissionPlaceholderValues values = new MissionPlaceholderValues(playerId -> {
+            var shop = plugin.getShopModule();
+            return shop == null ? Optional.empty() : shop.history().latest(playerId);
+        });
+        try {
+            Class<?> type = Class.forName("dev.linqfy.bigCasares.modules.missions.BigcPlaceholderExpansion", true,
+                plugin.getClass().getClassLoader());
+            Object expansion = type.getConstructor(MissionPlaceholderValues.class).newInstance(values);
+            if ((boolean) type.getMethod("register").invoke(expansion)) {
+                placeholderValues = values;
+                placeholderExpansion = expansion;
+                scope.register("bigc-placeholders", this::unregisterPlaceholders);
+                registrations.scheduleRepeating("bigc-placeholder-refresh", this::refreshPlaceholders, 40L, 40L);
+            }
+        } catch (ReflectiveOperationException | LinkageError ex) {
+            plugin.getLogger().log(java.util.logging.Level.WARNING,
+                "PlaceholderAPI está instalado pero los placeholders %bigc_...% no pudieron registrarse.", ex);
+        }
+    }
+
+    private void refreshPlaceholders() {
+        MissionPlaceholderValues values = placeholderValues;
+        if (values == null || economyGateway == null) {
+            return;
+        }
+        for (Player player : plugin.getServer().getOnlinePlayers()) {
+            MissionPlayerState state = stateCache.get(player.getUniqueId());
+            if (state != null) {
+                values.update(player.getUniqueId(), countClaimables(state),
+                    MissionTideframeMenu.plain(economyGateway.format(MissionOrder.pendingReward(state))));
+            }
+        }
+    }
+
+    private void unregisterPlaceholders() {
+        Object expansion = placeholderExpansion;
+        placeholderExpansion = null;
+        placeholderValues = null;
+        if (expansion != null) {
+            try {
+                expansion.getClass().getMethod("unregister").invoke(expansion);
+            } catch (ReflectiveOperationException ex) {
+                plugin.getLogger().log(java.util.logging.Level.FINE, "No se pudieron desregistrar los placeholders %bigc_...%", ex);
+            }
+        }
+    }
+
+    /** Three seconds after joining. */
+    static final long GREETING_DELAY_TICKS = 60L;
+
     /** Tells the player, once per mission and period, that it just became ready to claim (Java and Bedrock, in chat). */
     private void announceReady(Player player, MissionPlayerState before, MissionPlayerState after) {
         for (MissionDefinition ready : readyNotices.toAnnounce(before, after)) {
@@ -374,6 +465,10 @@ public final class MissionModule implements PluginModule {
 
     public void flush(UUID playerId) {
         readyNotices.forget(playerId);
+        MissionPlaceholderValues values = placeholderValues;
+        if (values != null) {
+            values.forget(playerId);
+        }
         MissionPlayerState state = stateCache.remove(playerId);
         if (state != null && dirtyPlayers.remove(playerId)) storage.save(state);
     }
@@ -500,6 +595,8 @@ public final class MissionModule implements PluginModule {
         stateCache.clear();
         dirtyPlayers.clear();
         readyNotices.clear();
+        bedrockRerollTaps.clear();
+        registrations = null;
         enabled = false;
         bedrockGeneration++;
         hudController = null;

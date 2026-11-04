@@ -48,6 +48,15 @@ class MissionReadyNoticesTest {
     }
 
     @Test
+    void theGreetingSaysWhatIsReadyOrNothing() {
+        assertEquals(java.util.Optional.empty(), MissionReadyNotices.greeting(0, 0, amount -> "$0"));
+        assertEquals(java.util.Optional.of("§eTenés 1 misión para cobrar §7($400) · /misiones"),
+            MissionReadyNotices.greeting(1, 400, amount -> "$" + (int) amount));
+        assertEquals(java.util.Optional.of("§eTenés 3 misiones para cobrar §7($650) · /misiones"),
+            MissionReadyNotices.greeting(3, 650, amount -> "§a$" + (int) amount));
+    }
+
+    @Test
     void aPlayerWhoLeftIsToldAgainAtMostOnce() {
         MissionReadyNotices notices = new MissionReadyNotices();
         notices.toAnnounce(holding(0, TODAY), holding(32, TODAY));

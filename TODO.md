@@ -153,6 +153,10 @@ Tideframe, no el dibujo ni los clics en un cliente. Ver [docs/tideframe.md](docs
 - [ ] Sonidos: compra o venta correcta, rechazo y cobro de misiones se oyen solo para quien los hizo (Java y Bedrock,
   también en el menú de inventario clásico), una sola vez por operación.
 - [ ] `/bigcasares historial`: muestra tus últimas compras y ventas de cualquier menú, la más nueva primero.
+- [ ] Entrar con misiones listas sin cobrar: a los 3 segundos llega "Tenés N misiones para cobrar"; sin nada, no llega.
+- [ ] "Cambiar" en Diarias (Java) y "Cambiar las diarias" (Bedrock): el primer toque pregunta, el segundo cambia;
+  no aparece con una diaria lista sin cobrar ni dos veces el mismo día; `/misiones reroll` también se niega.
+- [ ] Con PlaceholderAPI en un scoreboard: `%bigc_misiones_listas%`, `%bigc_misiones_premio%`, `%bigc_tienda_ultima%`.
 - [ ] Un producto o misión con nombre largo: se achica o termina en "…" sin pisar la columna de al lado.
 - [ ] Tocar el mercader o pedir `/misiones` dos veces seguidas con la pantalla abierta: los botones siguen funcionando.
 - [ ] `/tideframe reload` con una pantalla `bigc_*` abierta: no vuelve sola, el jugador ve el aviso y el

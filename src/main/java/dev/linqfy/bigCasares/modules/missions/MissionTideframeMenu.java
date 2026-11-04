@@ -18,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.DoubleFunction;
 import java.util.function.Function;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 /**
@@ -37,17 +38,35 @@ final class MissionTideframeMenu implements TideframeScreenHandler {
     private final DoubleFunction<String> money;
     private final Supplier<TideframeUi> ui;
     private final Consumer<Player> claim;
+    private final Function<Player, MissionReroll.Check> rerollCheck;
+    private final Consumer<Player> reroll;
+    private final LongSupplier clock;
     private final Map<UUID, MissionScope> tabs = new ConcurrentHashMap<>();
+    /** When each player first tapped "Cambiar" ({@link System#nanoTime()}): a second tap soon after confirms it. */
+    private final Map<UUID, Long> confirming = new ConcurrentHashMap<>();
     private AutoCloseable registration = () -> { };
 
-    /** {@code claim}: pays the player's ready rewards at once (and tells them in chat). */
+    /** Without "Cambiar" (the button stays hidden). */
     MissionTideframeMenu(Function<Player, MissionPlayerState> states, Function<MissionPlayerState, Integer> claimables,
                          DoubleFunction<String> money, Supplier<TideframeUi> ui, Consumer<Player> claim) {
+        this(states, claimables, money, ui, claim, player -> MissionReroll.Check.USED_TODAY, player -> { }, System::nanoTime);
+    }
+
+    /**
+     * {@code claim}: pays the player's ready rewards at once (and tells them in chat). {@code rerollCheck} and
+     * {@code reroll}: whether the player may change their daily missions, and the change itself.
+     */
+    MissionTideframeMenu(Function<Player, MissionPlayerState> states, Function<MissionPlayerState, Integer> claimables,
+                         DoubleFunction<String> money, Supplier<TideframeUi> ui, Consumer<Player> claim,
+                         Function<Player, MissionReroll.Check> rerollCheck, Consumer<Player> reroll, LongSupplier clock) {
         this.states = Objects.requireNonNull(states, "states");
         this.claimables = Objects.requireNonNull(claimables, "claimables");
         this.money = Objects.requireNonNull(money, "money");
         this.ui = Objects.requireNonNull(ui, "ui");
         this.claim = Objects.requireNonNull(claim, "claim");
+        this.rerollCheck = Objects.requireNonNull(rerollCheck, "rerollCheck");
+        this.reroll = Objects.requireNonNull(reroll, "reroll");
+        this.clock = Objects.requireNonNull(clock, "clock");
     }
 
     /**
@@ -92,6 +111,22 @@ final class MissionTideframeMenu implements TideframeScreenHandler {
                     show(tideframe, player, current);
                 }
             }
+            case "cambiar" -> {
+                // Daily tab only, and only when allowed; the second tap within a few seconds changes them.
+                UUID playerId = player.getUniqueId();
+                if (current == MissionScope.DAILY && !click.rightClick()) {
+                    MissionReroll.Check check = rerollCheck.apply(player);
+                    Long first = confirming.remove(playerId);
+                    if (check != MissionReroll.Check.ALLOWED) {
+                        player.sendMessage(MissionReroll.refusal(check));
+                    } else if (first != null && clock.getAsLong() - first <= MissionReroll.CONFIRM_NANOS) {
+                        reroll.accept(player);
+                    } else {
+                        confirming.put(playerId, clock.getAsLong());
+                    }
+                }
+                show(tideframe, player, current);
+            }
             // The X ("cerrar") keeps Tideframe's own close action; closed() hears it.
             default -> {
                 return false;
@@ -103,11 +138,13 @@ final class MissionTideframeMenu implements TideframeScreenHandler {
     @Override
     public void closed(Player player) {
         tabs.remove(player.getUniqueId());
+        confirming.remove(player.getUniqueId());
     }
 
     /** BigCasares reloads: forget the open screens (the Tideframe module closes them) and stop receiving clicks. */
     void close() {
         tabs.clear();
+        confirming.clear();
         try {
             registration.close();
         } catch (Exception ignored) {
@@ -136,6 +173,12 @@ final class MissionTideframeMenu implements TideframeScreenHandler {
             : pending + " para cobrar · " + plain(money.apply(MissionOrder.pendingReward(state))));
         tideframe.setVariable(player, "bigc_cobrables", String.valueOf(pending));
         tideframe.setVariable(player, "bigc_vacio", rows.isEmpty() ? "No hay misiones activas" : "");
+        // "Cambiar" shows on the daily tab while the change is possible; after one tap it asks to confirm.
+        boolean canChange = daily && rerollCheck.apply(player) == MissionReroll.Check.ALLOWED;
+        Long first = confirming.get(player.getUniqueId());
+        boolean asking = first != null && clock.getAsLong() - first <= MissionReroll.CONFIRM_NANOS;
+        tideframe.setVariable(player, "bigc_puede_cambiar", canChange ? "1" : "0");
+        tideframe.setVariable(player, "bigc_cambiar", asking ? "¿Seguro?" : "Cambiar");
     }
 
     /** The list rows: at most {@link #ROWS}, ready to claim first (so they are never the hidden ones), then the rest. */

@@ -113,6 +113,45 @@ class MissionTideframeMenuTest {
     }
 
     @Test
+    void cambiarAsksOnceAndTheSecondTapWithinSecondsChangesTheDailies() {
+        java.util.concurrent.atomic.AtomicLong clock = new java.util.concurrent.atomic.AtomicLong(0);
+        List<String> rerolled = new ArrayList<>();
+        java.util.concurrent.atomic.AtomicReference<MissionReroll.Check> check =
+            new java.util.concurrent.atomic.AtomicReference<>(MissionReroll.Check.ALLOWED);
+        MissionTideframeMenu withReroll = new MissionTideframeMenu(player -> state, MissionTideframeMenuTest::ready,
+            amount -> "$" + (int) amount, () -> ui, this::claim, player -> check.get(), player -> rerolled.add(player.getName()), clock::get);
+        withReroll.open(juan.player, MissionScope.DAILY, () -> { });
+        assertEquals("1", ui.variable(juan.player, "bigc_puede_cambiar"));
+        assertEquals("Cambiar", ui.variable(juan.player, "bigc_cambiar"));
+
+        assertTrue(ui.click(juan.player, SCREEN, "cambiar", -1, false));
+        assertEquals(List.of(), rerolled, "the first tap only asks");
+        assertEquals("¿Seguro?", ui.variable(juan.player, "bigc_cambiar"));
+        clock.addAndGet(MissionReroll.CONFIRM_NANOS - 1);
+        ui.click(juan.player, SCREEN, "cambiar", -1, false);
+        assertEquals(List.of("juan"), rerolled);
+        assertEquals("Cambiar", ui.variable(juan.player, "bigc_cambiar"));
+
+        ui.click(juan.player, SCREEN, "cambiar", -1, false);
+        clock.addAndGet(MissionReroll.CONFIRM_NANOS + 1);
+        ui.click(juan.player, SCREEN, "cambiar", -1, false);
+        assertEquals(List.of("juan"), rerolled, "too late: that tap asks again");
+
+        check.set(MissionReroll.Check.CLAIM_FIRST);
+        ui.click(juan.player, SCREEN, "cambiar", -1, false);
+        assertEquals(List.of("juan"), rerolled);
+        assertEquals("0", ui.variable(juan.player, "bigc_puede_cambiar"), "the button hides while a reward is ready");
+        assertTrue(juan.messages.getLast().contains("Cobrá primero"));
+
+        check.set(MissionReroll.Check.ALLOWED);
+        ui.click(juan.player, SCREEN, "semanales", -1, false);
+        assertEquals("0", ui.variable(juan.player, "bigc_puede_cambiar"), "only on the daily tab");
+        ui.click(juan.player, SCREEN, "cambiar", -1, false);
+        ui.click(juan.player, SCREEN, "cambiar", -1, false);
+        assertEquals(List.of("juan"), rerolled);
+    }
+
+    @Test
     void reclamarOnTheWeeklyTabStaysOnIt() {
         menu.open(juan.player, MissionScope.WEEKLY, () -> { });
         ui.click(juan.player, SCREEN, "reclamar", -1, false);
@@ -153,7 +192,7 @@ class MissionTideframeMenuTest {
     void theBundledScreenMatchesWhatThisMenuSendsAndHandles() throws Exception {
         menu.open(juan.player, MissionScope.DAILY, () -> { });
         var contract = dev.linqfy.bigCasares.testsupport.TideframeScreenContract.load(SCREEN);
-        contract.buttons(Set.of("diarias", "semanales", "reclamar"), Set.of());
+        contract.buttons(Set.of("diarias", "semanales", "reclamar", "cambiar"), Set.of());
         contract.lists(MissionTideframeMenu.LIST, MissionTideframeMenu.ROWS, Set.of("mision", "progreso", "premio"));
         contract.texts(ui.variables.get(juan.id).keySet());
     }

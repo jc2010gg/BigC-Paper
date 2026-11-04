@@ -41,6 +41,17 @@ public final class ShopHistory {
         }
     }
 
+    /** The player's last operation that went through, if any (any thread). */
+    public java.util.Optional<String> latest(UUID playerId) {
+        Deque<Entry> kept = entries.get(playerId);
+        if (kept == null) {
+            return java.util.Optional.empty();
+        }
+        synchronized (kept) {
+            return kept.isEmpty() ? java.util.Optional.empty() : java.util.Optional.of(kept.peekFirst().message());
+        }
+    }
+
     /** Chat lines for the player: newest first, each with how long ago. */
     public List<String> lines(UUID playerId) {
         Deque<Entry> kept = entries.get(playerId);

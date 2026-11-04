@@ -22,7 +22,7 @@ final class MissionBedrockForm {
     static final char CLAIMED = '';
     static final int SEGMENTS = 10;
 
-    enum Kind { DAILY, WEEKLY, MISSION, CLAIM }
+    enum Kind { DAILY, WEEKLY, REROLL, MISSION, CLAIM }
 
     record Button(String text, Kind kind) {
     }
@@ -40,8 +40,18 @@ final class MissionBedrockForm {
     private MissionBedrockForm() {
     }
 
+    /** Without "Cambiar". */
     static Page build(MissionPlayerState state, MissionScope scope, int claimables, DoubleFunction<String> money,
                       boolean glyphs, Instant now) {
+        return build(state, scope, claimables, money, glyphs, now, MissionReroll.Check.USED_TODAY, false);
+    }
+
+    /**
+     * {@code reroll}: whether the daily missions may change now (the daily tab then offers "Cambiar");
+     * {@code confirming}: the player tapped it a moment ago, so this tap confirms.
+     */
+    static Page build(MissionPlayerState state, MissionScope scope, int claimables, DoubleFunction<String> money,
+                      boolean glyphs, Instant now, MissionReroll.Check reroll, boolean confirming) {
         boolean daily = scope == MissionScope.DAILY;
         Collection<MissionAssignment> assignments = (daily ? state.dailyAssignments() : state.weeklyAssignments()).values();
         Instant resetsAt = daily ? state.dailyResetsAt() : state.weeklyResetsAt();
@@ -56,6 +66,10 @@ final class MissionBedrockForm {
         List<Button> buttons = new ArrayList<>();
         buttons.add(new Button(daily ? "§e» Diarias «" : "§7Diarias", Kind.DAILY));
         buttons.add(new Button(daily ? "§7Semanales" : "§e» Semanales «", Kind.WEEKLY));
+        if (daily && reroll == MissionReroll.Check.ALLOWED) {
+            buttons.add(new Button(confirming ? "§c¿Seguro? Tocá de nuevo para cambiar las diarias"
+                : "§6Cambiar las diarias §7(1 vez por día)", Kind.REROLL));
+        }
         for (MissionAssignment assignment : MissionOrder.readyFirst(assignments)) {
             MissionDefinition definition = assignment.definition();
             MissionProgressSnapshot snapshot = assignment.snapshot();

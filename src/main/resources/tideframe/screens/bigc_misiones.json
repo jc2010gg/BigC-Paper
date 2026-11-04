@@ -280,6 +280,48 @@
       "actionArea": null
     },
     {
+      "id": "cambiar",
+      "text": "{bigc_cambiar}",
+      "x": 0.691,
+      "y": 0.403,
+      "width": 0.336,
+      "height": 0.153,
+      "kind": "button",
+      "action": "",
+      "shape": "rounded",
+      "border": true,
+      "messageCondition": null,
+      "background": true,
+      "image": null,
+      "style": {
+        "opacity": 1,
+        "fillColor": "#173b48",
+        "borderColor": "#f2c46b",
+        "textColor": "#edf8f4",
+        "shadow": false,
+        "rotation": 0,
+        "radius": 0.16,
+        "outlineWidth": 1,
+        "hoverColor": "#53dbc1",
+        "hoverEffect": "glow",
+        "textAlign": "center",
+        "wrapWidth": 0,
+        "brightness": 1,
+        "textScale": 1,
+        "textOutline": null,
+        "textShadow": false,
+        "gradientColor": null,
+        "gradientDirection": "vertical",
+        "textGradient": null,
+        "textCase": "original"
+      },
+      "layer": 2,
+      "actionArea": null,
+      "logic": {
+        "visible-if": "{bigc_puede_cambiar} = 1"
+      }
+    },
+    {
       "id": "col_mision",
       "text": "Misión",
       "x": -0.383,

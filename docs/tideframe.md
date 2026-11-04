@@ -82,6 +82,12 @@ puede chocar con otros packs o con Iris/OptiFine.
   mision queda lista, el jugador recibe un aviso en el chat una sola vez, con el premio. Las dos ediciones
   muestran cuanta plata pagaria Reclamar ("2 para cobrar · $650"). En Bedrock, despues de comprar o vender el
   formulario de la categoria vuelve a abrirse con el saldo nuevo, como la pantalla Java que sigue abierta.
+- Al entrar, si hay misiones para cobrar, el jugador recibe a los 3 segundos "Tenés N misiones para cobrar ($X)".
+- "Cambiar" (Java, pestaña Diarias) y "Cambiar las diarias" (Bedrock) reemplazan las diarias una vez por dia,
+  con un segundo toque en menos de 3 segundos para confirmar. Nunca mientras haya una diaria lista sin cobrar:
+  el cambio la borraria. Esa proteccion vale tambien para `/misiones reroll`.
+- Con PlaceholderAPI: `%bigc_misiones_listas%`, `%bigc_misiones_premio%` y `%bigc_tienda_ultima%`, con
+  identificador propio (`bigcasares` ya lo usan los equipos). Se actualizan cada 2 segundos en el hilo del servidor.
 - Textos largos: el motor ya achica las lineas que no entran en su columna y, si igual no entran, las corta
   con "…" (`TextFit`, pantallas de esquema 9 que no usan la calidad "legacy", como `bigc_*`).
 - `/bigcasares tideframe` (permiso `bigcasares.tideframe.status`, op): si el motor corre, si envia su pack,

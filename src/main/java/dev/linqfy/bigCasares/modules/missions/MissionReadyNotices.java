@@ -35,6 +35,15 @@ final class MissionReadyNotices {
             + MissionTideframeMenu.plain(money.apply(ready.reward())) + " §7· /misiones para cobrarla";
     }
 
+    /** The line for a player who just joined: what they have to claim, or nothing when there is none. */
+    static java.util.Optional<String> greeting(int ready, double reward, java.util.function.DoubleFunction<String> money) {
+        if (ready <= 0) {
+            return java.util.Optional.empty();
+        }
+        return java.util.Optional.of("§eTenés " + (ready == 1 ? "1 misión" : ready + " misiones") + " para cobrar §7("
+            + MissionTideframeMenu.plain(money.apply(reward)) + ") · /misiones");
+    }
+
     /** The player left: forget them (at worst, a passive mission is announced once more on their return). */
     void forget(UUID playerId) {
         announced.remove(playerId);

@@ -69,6 +69,20 @@ class MissionBedrockFormTest {
     }
 
     @Test
+    void theDailyTabOffersCambiarWhenAllowedAndAsksToConfirm() {
+        var asking = MissionBedrockForm.build(state, MissionScope.DAILY, 1, amount -> "$", true, NOW, MissionReroll.Check.ALLOWED, false);
+        assertEquals(MissionBedrockForm.Kind.REROLL, asking.buttons().get(2).kind());
+        assertEquals("§6Cambiar las diarias §7(1 vez por día)", asking.texts().get(2));
+        var confirming = MissionBedrockForm.build(state, MissionScope.DAILY, 1, amount -> "$", true, NOW, MissionReroll.Check.ALLOWED, true);
+        assertEquals("§c¿Seguro? Tocá de nuevo para cambiar las diarias", confirming.texts().get(2));
+
+        var weekly = MissionBedrockForm.build(state, MissionScope.WEEKLY, 1, amount -> "$", true, NOW, MissionReroll.Check.ALLOWED, false);
+        assertTrue(weekly.buttons().stream().noneMatch(button -> button.kind() == MissionBedrockForm.Kind.REROLL));
+        var used = MissionBedrockForm.build(state, MissionScope.DAILY, 1, amount -> "$", true, NOW, MissionReroll.Check.USED_TODAY, false);
+        assertTrue(used.buttons().stream().noneMatch(button -> button.kind() == MissionBedrockForm.Kind.REROLL));
+    }
+
+    @Test
     void emptyListSaysSoAndOnlyOffersTheTabs() {
         var page = MissionBedrockForm.build(state(List.of(), List.of()), MissionScope.DAILY, 0, amount -> "", true, NOW);
 
