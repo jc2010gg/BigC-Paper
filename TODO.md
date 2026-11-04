@@ -145,7 +145,10 @@ Tideframe, no el dibujo ni los clics en un cliente. Ver [docs/tideframe.md](docs
   no cobra nada. En Bedrock, "Cantidad" alterna x1, x4 y x16 y una fila compra esa cantidad.
 - [ ] Completar una misión jugando: llega un solo aviso "¡Misión lista!" en el chat y, al abrir /misiones,
   esa misión está primera.
-- [ ] `/bigcasares tideframe` como operador: los números coinciden con los jugadores conectados y el pack.
+- [ ] `/bigcasares tideframe` como operador: los números coinciden con los jugadores conectados y el pack;
+  abrir la tienda saltando suma una caída "en el aire".
+- [ ] Shift + clic derecho sobre un producto (Java): vende todos los lotes enteros de una vez, un solo pago.
+- [ ] Sonidos: compra o venta correcta, rechazo y cobro de misiones se oyen solo para quien los hizo (Java y Bedrock).
 - [ ] Un producto o misión con nombre largo: se achica o termina en "…" sin pisar la columna de al lado.
 - [ ] `/shop` y `/misiones` dos veces seguidas con la pantalla abierta: los botones siguen funcionando.
 - [ ] `/tideframe reload` con una pantalla `bigc_*` abierta: no vuelve sola, el jugador ve el aviso y el

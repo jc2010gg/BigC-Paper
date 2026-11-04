@@ -51,6 +51,7 @@ final class TideframeUiService implements TideframeUi, TideframeEventSink {
     private final Map<UUID, DeferredFallback> deferredFallbacks = new ConcurrentHashMap<>();
     private final AtomicLong tickets = new AtomicLong();
     private final AtomicBoolean broken = new AtomicBoolean();
+    private final Map<TideframeStatus.Fallback, java.util.concurrent.atomic.LongAdder> fallbacks = new ConcurrentHashMap<>();
 
     TideframeUiService(TideframeBridge bridge, ClientPlatformGateway platforms, BooleanSupplier ownPack,
                        Consumer<Runnable> mainThread, Consumer<LinkageError> incompatible) {
@@ -93,28 +94,43 @@ final class TideframeUiService implements TideframeUi, TideframeEventSink {
         } catch (LinkageError changed) {
             incompatible(changed);
         }
-        return new TideframeStatus(true, broken.get(), ownPack.getAsBoolean(), missions, shop, missing, javaPlayers, withPack, bedrock);
+        Map<TideframeStatus.Fallback, Long> counted = new java.util.EnumMap<>(TideframeStatus.Fallback.class);
+        fallbacks.forEach((reason, count) -> counted.put(reason, count.sum()));
+        return new TideframeStatus(true, broken.get(), ownPack.getAsBoolean(), missions, shop, missing, javaPlayers, withPack,
+            bedrock, counted);
     }
 
     @Override
     public boolean canShow(Player player, String screenId) {
-        if (broken.get() || player == null || !player.isOnline() || screenId == null || !screenId.startsWith(PREFIX)) {
+        if (player == null || !player.isOnline() || screenId == null || !screenId.startsWith(PREFIX)) {
             return false;
+        }
+        if (broken.get()) {
+            return fellBack(TideframeStatus.Fallback.API_CHANGED);
         }
         // Bedrock keeps BigCasares' forms: Tideframe's Java screens and fonts do not exist there.
         if (platforms.resolvePlatform(player.getUniqueId()) != ClientPlatform.JAVA) {
-            return false;
+            return fellBack(TideframeStatus.Fallback.BEDROCK);
         }
         // A Tideframe menu holds the camera still: not while gliding, riding, falling or dead.
         if (player.isDead() || player.isInsideVehicle() || player.isGliding() || !(player.isOnGround() || player.isFlying())) {
-            return false;
+            return fellBack(TideframeStatus.Fallback.MOVING);
         }
         try {
-            return ownPack.getAsBoolean() && bridge.screenIds().contains(screenId) && bridge.isPackLoaded(player);
+            if (!ownPack.getAsBoolean()) return fellBack(TideframeStatus.Fallback.NO_OWN_PACK);
+            if (!bridge.screenIds().contains(screenId)) return fellBack(TideframeStatus.Fallback.SCREEN_MISSING);
+            if (!bridge.isPackLoaded(player)) return fellBack(TideframeStatus.Fallback.PACK_NOT_LOADED);
+            return true;
         } catch (LinkageError changed) {
             incompatible(changed);
-            return false;
+            return fellBack(TideframeStatus.Fallback.API_CHANGED);
         }
+    }
+
+    /** Counts why a BigCasares menu takes its classic form (for the status command); always false. */
+    private boolean fellBack(TideframeStatus.Fallback reason) {
+        fallbacks.computeIfAbsent(reason, ignored -> new java.util.concurrent.atomic.LongAdder()).increment();
+        return false;
     }
 
     @Override
@@ -137,6 +153,7 @@ final class TideframeUiService implements TideframeUi, TideframeEventSink {
             if (failure instanceof LinkageError changed) {
                 incompatible(changed);
             }
+            fellBack(TideframeStatus.Fallback.OPEN_FAILED);
             opened.accept(false);
             return;
         }
@@ -152,6 +169,9 @@ final class TideframeUiService implements TideframeUi, TideframeEventSink {
                 // counts overlays), so the screen itself is checked: otherwise the player would get neither menu.
                 boolean success = request.prepared().get() && error == null && Boolean.TRUE.equals(result)
                     && player.isOnline() && showing(player, screenId);
+                if (!success && player.isOnline()) {
+                    fellBack(TideframeStatus.Fallback.OPEN_FAILED);
+                }
                 if (!success && player.isOnline() && menuOpen(player)) {
                     deferredFallbacks.put(playerId, new DeferredFallback(ticket, opened));
                     player.sendMessage(ChatColor.YELLOW + "Cerrá la pantalla actual para abrir el menú clásico.");

@@ -118,8 +118,13 @@ public final class FakeTideframeUi implements TideframeUi {
 
     /** Plays a click as Tideframe's event: true when the feature cancels it (Tideframe would run no action of it). */
     public boolean click(Player player, String screenId, String elementId, int row, boolean right) {
+        return click(player, screenId, elementId, row, right, false);
+    }
+
+    /** The same, with the player sneaking ({@code shift}) or not. */
+    public boolean click(Player player, String screenId, String elementId, int row, boolean right, boolean shift) {
         TideframeScreenHandler handler = handlers.get(screenId);
-        return handler != null && handler.click(player, new TideframeClick(player.getUniqueId(), screenId, elementId, row, right, false));
+        return handler != null && handler.click(player, new TideframeClick(player.getUniqueId(), screenId, elementId, row, right, shift));
     }
 
     /** The player closed the menu some other way (the X, Escape): Tideframe's close event for the whole UI. */

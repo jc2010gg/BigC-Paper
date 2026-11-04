@@ -76,12 +76,30 @@ class TideframeUiServiceTest {
         platforms.put(pepe.id, ClientPlatform.BEDROCK);
         TideframeStatus status = ui.status(List.of(juan.player, ana.player, pepe.player),
             List.of("bigc_misiones", "bigc_tienda"), true, false);
-        assertEquals(new TideframeStatus(true, false, true, true, false, List.of("bigc_misiones"), 2, 2, 1), status);
+        assertEquals(new TideframeStatus(true, false, true, true, false, List.of("bigc_misiones"), 2, 2, 1, Map.of()), status);
 
         bridge.packLoaded = false;
         ownPack = false;
         assertEquals(0, ui.status(List.of(juan.player), List.of(), true, true).javaWithPack());
         assertFalse(ui.status(List.of(), List.of(), true, true).ownPack());
+    }
+
+    @Test
+    void theStatusCountsEveryReasonAMenuTookItsClassicForm() {
+        juan.onGround = false;
+        ui.canShow(juan.player, "bigc_tienda");
+        juan.onGround = true;
+        bridge.packLoaded = false;
+        ui.canShow(juan.player, "bigc_tienda");
+        ui.canShow(juan.player, "bigc_tienda");
+        bridge.packLoaded = true;
+        ui.canShow(juan.player, "bigc_misiones");
+        ui.canShow(juan.player, "visual_menu09");
+        assertTrue(ui.canShow(juan.player, "bigc_tienda"));
+
+        assertEquals(Map.of(TideframeStatus.Fallback.MOVING, 1L, TideframeStatus.Fallback.PACK_NOT_LOADED, 2L,
+            TideframeStatus.Fallback.SCREEN_MISSING, 1L), ui.status(List.of(), List.of(), true, true).fallbacks(),
+            "another plugin's screen and a successful check count nothing");
     }
 
     @Test

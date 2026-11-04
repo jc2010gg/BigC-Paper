@@ -38,6 +38,8 @@ final class ShopTideframeMenu implements TideframeScreenHandler {
     static final long SETTLE_NANOS = 500_000_000L;
     /** Lots a click buys or sells, in the order the "cantidad" button goes through them. */
     static final List<Integer> QUANTITIES = List.of(1, 4, 16);
+    /** The most lots one operation moves (ShopService refuses more). */
+    static final int MAX_LOTS = 64;
 
     /** What the shop service does for the screen (ShopService and the economy, or fakes in tests). */
     interface Actions {
@@ -51,6 +53,9 @@ final class ShopTideframeMenu implements TideframeScreenHandler {
 
         /** The player's balance as a number, to show how much a row is short of. */
         double funds(Player player);
+
+        /** Items of the entry the player carries, for "sell all". */
+        int owned(Player player, ShopEntry entry);
 
         String format(double amount);
     }
@@ -179,12 +184,20 @@ final class ShopTideframeMenu implements TideframeScreenHandler {
         // One click, one operation (of the lots shown), by the same service and rules as the inventory menu.
         boolean sell = click.rightClick();
         int lots = view.lots();
+        if (sell && click.shiftClick()) {
+            // Shift + right click sells every whole lot carried (up to 64), still as one operation.
+            lots = Math.min(MAX_LOTS, actions.owned(player, entry.get()) / Math.max(1, entry.get().amount()));
+            if (lots == 0) {
+                show(tideframe, player, view.categoryId(), view.page(), view.lots(), "No tenés " + name(entry.get()) + " para vender.");
+                return;
+            }
+        }
         ShopTransactionResult result = sell ? actions.sell(player, entry.get(), lots) : actions.buy(player, entry.get(), lots);
         player.sendMessage((result.success() ? ChatColor.GREEN : ChatColor.RED) + result.message());
         String notice = !result.success() ? result.message() : (sell ? "Vendiste " : "Compraste ") + name(entry.get())
             + (lots > 1 ? " (x" + lots + ")" : "") + " por "
             + plain(actions.format((sell ? entry.get().sellPrice() : entry.get().buyPrice()) * lots)) + ".";
-        show(tideframe, player, view.categoryId(), view.page(), lots, notice);
+        show(tideframe, player, view.categoryId(), view.page(), view.lots(), notice);
     }
 
     /** The next quantity after {@code lots}, back to the first after the last. */
@@ -233,7 +246,7 @@ final class ShopTideframeMenu implements TideframeScreenHandler {
         tideframe.setList(player, LIST, rows);
         tideframe.setVariable(player, "bigc_tienda_titulo", category.map(c -> plain(c.name())).orElse("Categorías"));
         tideframe.setVariable(player, "bigc_tienda_ayuda", category.isPresent()
-            ? "Izquierdo: comprar · Derecho: vender" : "Tocá una para ver sus productos");
+            ? "Izq.: comprar · Der.: vender · Shift+Der.: vender todo" : "Tocá una para ver sus productos");
         tideframe.setVariable(player, "bigc_tienda_saldo", plain(actions.balance(player)));
         tideframe.setVariable(player, "bigc_tienda_pagina", pages > 1 ? (shown + 1) + " de " + pages : "");
         // The screen shows the arrows only with more than one page, and "Volver" only inside a category.

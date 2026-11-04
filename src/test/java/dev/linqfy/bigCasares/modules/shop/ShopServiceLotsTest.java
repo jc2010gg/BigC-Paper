@@ -71,6 +71,14 @@ class ShopServiceLotsTest {
     }
 
     @Test
+    void ownedCountsOnlyMatchingItems() {
+        storage[0] = new ItemStack(Material.STONE, 64);
+        storage[3] = new ItemStack(Material.DIRT, 64);
+        storage[7] = new ItemStack(Material.STONE, 5);
+        assertEquals(69, service.owned(player, STONE));
+    }
+
+    @Test
     void oneLotKeepsTheOldMessagesAndNoLotIsRefused() {
         assertEquals("Compraste stone por $64.", service.buy(player, STONE).message());
         assertThrows(IllegalArgumentException.class, () -> service.buy(player, STONE, 0));

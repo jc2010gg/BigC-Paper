@@ -198,6 +198,7 @@ public final class MissionModule implements PluginModule {
         dirtyPlayers.remove(player.getUniqueId());
         double amount = sumClaimables(state);
         if (amount > 0.0) {
+            dev.linqfy.bigCasares.platform.FeedbackSounds.reward(player);
             player.sendMessage("§aReclamaste " + economyGateway.format(amount) + " en recompensas.");
         } else {
             player.sendMessage("§eNo tenes recompensas pendientes.");

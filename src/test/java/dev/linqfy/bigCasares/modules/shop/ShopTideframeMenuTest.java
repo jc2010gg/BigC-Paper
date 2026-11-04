@@ -59,6 +59,13 @@ class ShopTideframeMenuTest {
             return funds;
         }
 
+        int owned;
+
+        @Override
+        public int owned(Player player, ShopEntry entry) {
+            return owned;
+        }
+
         @Override
         public String format(double amount) {
             return "$" + (int) amount;
@@ -220,6 +227,29 @@ class ShopTideframeMenuTest {
         assertEquals("Cant. x16", ui.variable(juan.player, "bigc_tienda_cantidad"));
         ui.click(juan.player, SCREEN, "cantidad", -1, false);
         assertEquals("Cant. x1", ui.variable(juan.player, "bigc_tienda_cantidad"), "and back to one");
+    }
+
+    @Test
+    void shiftRightClickSellsEveryWholeLotCarriedAsOneOperation() {
+        current.set(new ShopCatalog(List.of(new ShopCategory("bloques", "Bloques", Material.STONE, 10,
+            List.of(new ShopEntry("piedra", 0, Material.STONE, null, 32, 64, 4, "Piedra", List.of()))))));
+        menu.openCategory(juan.player, current.get().category("bloques").orElseThrow(), () -> { });
+        look();
+        service.owned = 20;
+        assertTrue(ui.click(juan.player, SCREEN, "fila", 0, true, true));
+        assertEquals(List.of(), service.calls, "20 stones are not one lot of 32: nothing to sell");
+        assertEquals("No tenés Piedra para vender.", ui.variable(juan.player, "bigc_tienda_aviso"));
+
+        service.owned = 100;
+        ui.click(juan.player, SCREEN, "fila", 0, true, true);
+        assertEquals(List.of("sell piedra x3"), service.calls, "three whole lots, one call");
+        assertEquals("Cant. x1", ui.variable(juan.player, "bigc_tienda_cantidad"), "the chosen quantity stays");
+
+        service.owned = 32 * 200;
+        ui.click(juan.player, SCREEN, "fila", 0, true, true);
+        assertEquals("sell piedra x64", service.calls.getLast(), "never more lots than one operation allows");
+        ui.click(juan.player, SCREEN, "fila", 0, false, true);
+        assertEquals("buy piedra", service.calls.getLast(), "shift with a left click still buys the chosen quantity");
     }
 
     @Test

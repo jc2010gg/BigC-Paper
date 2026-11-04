@@ -89,12 +89,7 @@ public final class ShopService {
     public ShopTransactionResult sell(Player player, ShopEntry entry, int lots) {
         requireLots(lots);
         ItemStack[] contents = player.getInventory().getStorageContents();
-        int total = 0;
-        for (ItemStack stack : contents) {
-            if (resolver.matches(stack, entry)) {
-                total += stack.getAmount();
-            }
-        }
+        int total = owned(player, entry);
 
         int needed = entry.amount() * lots;
         if (total < needed) {
@@ -108,6 +103,17 @@ public final class ShopService {
         removeMatching(contents, entry, needed);
         player.getInventory().setStorageContents(contents);
         return ShopTransactionResult.success("Vendiste " + entry.id() + times(lots) + " por " + economy.format(price) + ".", null);
+    }
+
+    /** How many items of the entry the player carries (the canonical match the sale uses). */
+    public int owned(Player player, ShopEntry entry) {
+        int total = 0;
+        for (ItemStack stack : player.getInventory().getStorageContents()) {
+            if (resolver.matches(stack, entry)) {
+                total += stack.getAmount();
+            }
+        }
+        return total;
     }
 
     private static void requireLots(int lots) {

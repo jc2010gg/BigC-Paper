@@ -6,6 +6,7 @@ import dev.linqfy.bigCasares.module.runtime.BukkitRuntimeRegistrations;
 import dev.linqfy.bigCasares.module.runtime.RuntimeRegistrationScope;
 import dev.linqfy.bigCasares.modules.bounties.BountyEconomyGateway;
 import dev.linqfy.bigCasares.platform.BedrockItemIcons;
+import dev.linqfy.bigCasares.platform.FeedbackSounds;
 import dev.linqfy.bigCasares.platform.ClientPlatform;
 import dev.linqfy.bigCasares.platform.ClientPlatformGateway;
 import dev.linqfy.bigCasares.platform.ClientEntityPresentationRegistry;
@@ -132,10 +133,15 @@ public final class ShopModule implements PluginModule {
         ShopEconomyGateway ownedEconomy = economyGateway;
         ShopCatalog ownedCatalog = catalog;
         ShopTideframeMenu menu = new ShopTideframeMenu(() -> ownedCatalog, new ShopTideframeMenu.Actions() {
-            @Override public ShopTransactionResult buy(Player player, ShopEntry entry, int lots) { return ownedService.buy(player, entry, lots); }
-            @Override public ShopTransactionResult sell(Player player, ShopEntry entry, int lots) { return ownedService.sell(player, entry, lots); }
+            @Override public ShopTransactionResult buy(Player player, ShopEntry entry, int lots) {
+                return withSound(player, ownedService.buy(player, entry, lots));
+            }
+            @Override public ShopTransactionResult sell(Player player, ShopEntry entry, int lots) {
+                return withSound(player, ownedService.sell(player, entry, lots));
+            }
             @Override public String balance(Player player) { return ownedEconomy.format(ownedEconomy.balance(player)); }
             @Override public double funds(Player player) { return ownedEconomy.balance(player); }
+            @Override public int owned(Player player, ShopEntry entry) { return ownedService.owned(player, entry); }
             @Override public String format(double amount) { return ownedEconomy.format(amount); }
         }, () -> tideframe.get());
         this.tideframeMenu = menu;
@@ -314,9 +320,15 @@ public final class ShopModule implements PluginModule {
             if (activeService == null) {
                 return;
             }
-            ShopTransactionResult result = activeService.buy(player, entry, lots);
+            ShopTransactionResult result = withSound(player, activeService.buy(player, entry, lots));
             player.sendMessage((result.success() ? "§a" : "§c") + result.message());
         });
+    }
+
+    /** The sound of a purchase or sale (ok or refused) for the player who made it. */
+    private static ShopTransactionResult withSound(Player player, ShopTransactionResult result) {
+        FeedbackSounds.result(player, result.success());
+        return result;
     }
 
     private Player resolveActiveFormPlayer(UUID playerId, long generation) {

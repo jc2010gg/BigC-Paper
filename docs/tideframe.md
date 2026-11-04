@@ -70,12 +70,17 @@ puede chocar con otros packs o con Iris/OptiFine.
   como filas nuevas para la espera anti doble clic. Si el saldo no alcanza para la cantidad elegida, la fila
   muestra "falta $X" en lugar del precio de compra. En Bedrock el primer boton del formulario de una categoria
   es la misma cantidad, y una fila que no se puede pagar va en rojo con lo que falta.
+  Shift + clic derecho (Java) vende todos los lotes enteros que el jugador lleva, hasta 64, en una sola
+  operacion. Compras, ventas y cobros de misiones suenan (exito, rechazo, recompensa) solo para quien los hizo;
+  el menu de inventario clasico no cambia.
 - Misiones: las listas para cobrar van primero (Java y Bedrock), asi nunca quedan entre las ocultas. Cuando una
   mision queda lista, el jugador recibe un aviso en el chat una sola vez.
 - Textos largos: el motor ya achica las lineas que no entran en su columna y, si igual no entran, las corta
   con "…" (`TextFit`, pantallas de esquema 9 que no usan la calidad "legacy", como `bigc_*`).
 - `/bigcasares tideframe` (permiso `bigcasares.tideframe.status`, op): si el motor corre, si envia su pack,
   que pantallas `bigc_*` faltan y cuantos jugadores Java tienen el pack (y cuantos Bedrock usan formularios).
+  Tambien cuenta, desde el arranque, cuantas veces misiones o tienda se abrieron con el menu clasico y por que
+  (sin pack cargado, en el aire o vehiculo, pantalla sin cargar, pack.send apagado, apertura fallida...).
 - El resto de menus de BigCasares no se convierte automaticamente: incluir todo el motor no equivale a redisenar
   todas las pantallas del plugin.
 - Java usa Tideframe cuando la pantalla y su pack estan listos. Bedrock conserva los formularios existentes;
