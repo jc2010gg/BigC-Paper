@@ -52,8 +52,10 @@ public final class ShopModule implements PluginModule {
     static final String QUANTITY_BUTTON = "#cantidad";
     /** The id of the Bedrock form's buy/sell switch. */
     static final String MODE_BUTTON = "#modo";
-    /** Buttons before the products in a Bedrock category form (quantity and mode). */
-    static final int HEADER_BUTTONS = 2;
+    /** The id of the Bedrock category form's way back to the categories. */
+    static final String BACK_BUTTON = "#volver";
+    /** Buttons before the products in a Bedrock category form (back, quantity and mode). */
+    static final int HEADER_BUTTONS = 3;
     /** Each Bedrock player's chosen quantity of lots per tap (1 when not set). */
     private final Map<UUID, Integer> bedrockLots = new java.util.concurrent.ConcurrentHashMap<>();
     /** Bedrock players whose category forms sell instead of buying. */
@@ -241,10 +243,7 @@ public final class ShopModule implements PluginModule {
             "§6§lTienda BigCasares",
             "§7Elegí una categoría",
             economyGateway.format(economyGateway.balance(player)),
-            catalog.categories().stream()
-                .map(category -> new ShopViewItem(category.id(), category.name(), "", "", null, true,
-                    BedrockItemIcons.path(category.icon()).orElse(null)))
-                .toList()
+            bedrockCategoryButtons(catalog)
         );
         BukkitRuntimeRegistrations activeRegistrations = registrations;
         boolean sent = bedrockFormSender.send(playerId, view,
@@ -285,8 +284,17 @@ public final class ShopModule implements PluginModule {
         catalog.category(categoryId).ifPresent(category -> openBedrockCategory(player, category));
     }
 
+    /** The Bedrock categories form: each category with its icon and how many products it has, as the Java screen. */
+    static List<ShopViewItem> bedrockCategoryButtons(ShopCatalog catalog) {
+        return catalog.categories().stream()
+            .map(category -> new ShopViewItem(category.id(), category.name(), "",
+                category.entries().size() == 1 ? "1 producto" : category.entries().size() + " productos", null, true,
+                BedrockItemIcons.path(category.icon()).orElse(null)))
+            .toList();
+    }
+
     /**
-     * The Bedrock category form's buttons: the quantity a tap moves (as the Java screen's "Cant.", x1, x4, x16 in turn)
+     * The Bedrock category form's buttons: back to the categories, the quantity a tap moves (as the Java screen's "Cant.", x1, x4, x16 in turn)
      * and whether it buys or sells, then each product with the name and price of that quantity and its vanilla Bedrock
      * icon. Buying, a row the balance does not cover is red with what is missing; selling, a row the player does not
      * carry enough of is red with how many they have, and one the shop does not buy back says so.
@@ -295,6 +303,7 @@ public final class ShopModule implements PluginModule {
                                                    java.util.function.ToIntFunction<ShopEntry> owned,
                                                    java.util.function.DoubleFunction<String> money) {
         List<ShopViewItem> items = new ArrayList<>();
+        items.add(new ShopViewItem(BACK_BUTTON, "§7« Volver a las categorías", "", "", null, true));
         items.add(new ShopViewItem(QUANTITY_BUTTON, "§bCantidad: x" + lots + " §7(tocá para cambiar)", "", "", null, true));
         items.add(new ShopViewItem(MODE_BUTTON, selling ? "§6Modo: vender §7(tocá para comprar)" : "§aModo: comprar §7(tocá para vender)",
             "", "", null, true));
@@ -340,6 +349,10 @@ public final class ShopModule implements PluginModule {
             return;
         }
         String id = view.items().get(index).id();
+        if (BACK_BUTTON.equals(id)) {
+            openBedrockCategories(player);
+            return;
+        }
         if (QUANTITY_BUTTON.equals(id) || MODE_BUTTON.equals(id)) {
             if (QUANTITY_BUTTON.equals(id)) {
                 bedrockLots.put(playerId, ShopTideframeMenu.next(lots));

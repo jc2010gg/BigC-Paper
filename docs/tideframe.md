@@ -69,7 +69,8 @@ puede chocar con otros packs o con Iris/OptiFine.
   (un cobro o un pago, todo o nada) y las filas muestran el precio de esa cantidad. Cambiar la cantidad cuenta
   como filas nuevas para la espera anti doble clic. Si el saldo no alcanza para la cantidad elegida, la fila
   muestra "falta $X" en lugar del precio de compra. En Bedrock el primer boton del formulario de una categoria
-  es la misma cantidad y el segundo alterna "Modo: comprar" y "Modo: vender". Comprando, una fila que no se puede
+  es "Volver a las categorías", el segundo la misma cantidad y el tercero alterna "Modo: comprar" y "Modo: vender"
+  (el formulario de categorías muestra cuántos productos tiene cada una, como Java). Comprando, una fila que no se puede
   pagar va en rojo con lo que falta; vendiendo, muestra el precio de venta, en rojo con cuántos lleva el jugador si
   no alcanzan, o "no se compra acá" si el producto no tiene precio de venta.
   Shift + clic derecho (Java) vende todos los lotes enteros que el jugador lleva, hasta 64, en una sola

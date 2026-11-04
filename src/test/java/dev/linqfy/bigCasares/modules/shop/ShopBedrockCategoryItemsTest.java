@@ -20,41 +20,52 @@ class ShopBedrockCategoryItemsTest {
             entry -> entry.id().equals("bread") ? breadCarried : 0, amount -> "$" + (int) amount);
     }
 
+    private static final int FIRST = ShopModule.HEADER_BUTTONS;
+
     @Test
-    void quantityAndModeComeFirstThenTheProductsInOrder() {
+    void backQuantityAndModeComeFirstThenTheProductsInOrder() {
         List<ShopViewItem> items = items(1, false, 1000, 0);
-        assertEquals(ShopModule.HEADER_BUTTONS, 2);
-        assertEquals(ShopModule.QUANTITY_BUTTON, items.get(0).id());
-        assertEquals("§bCantidad: x1 §7(tocá para cambiar)", items.get(0).name());
-        assertEquals(ShopModule.MODE_BUTTON, items.get(1).id());
-        assertEquals("§aModo: comprar §7(tocá para vender)", items.get(1).name());
-        assertEquals(List.of("bread", "nuke"), items.subList(2, 4).stream().map(ShopViewItem::id).toList());
-        assertEquals("&6Pan §7x16", items.get(2).name());
-        assertEquals("$40", items.get(2).price());
-        assertEquals("textures/items/bread", items.get(2).iconPath());
-        assertNull(items.get(3).iconPath(), "a custom item has no vanilla icon");
+        assertEquals(List.of(ShopModule.BACK_BUTTON, ShopModule.QUANTITY_BUTTON, ShopModule.MODE_BUTTON),
+            items.subList(0, FIRST).stream().map(ShopViewItem::id).toList());
+        assertEquals("§7« Volver a las categorías", items.get(0).name());
+        assertEquals("§bCantidad: x1 §7(tocá para cambiar)", items.get(1).name());
+        assertEquals("§aModo: comprar §7(tocá para vender)", items.get(2).name());
+        assertEquals(List.of("bread", "nuke"), items.subList(FIRST, FIRST + 2).stream().map(ShopViewItem::id).toList());
+        assertEquals("&6Pan §7x16", items.get(FIRST).name());
+        assertEquals("$40", items.get(FIRST).price());
+        assertEquals("textures/items/bread", items.get(FIRST).iconPath());
+        assertNull(items.get(FIRST + 1).iconPath(), "a custom item has no vanilla icon");
     }
 
     @Test
     void buyingFourLotsShowsTheirCountPriceAndWhatIsMissing() {
         List<ShopViewItem> items = items(4, false, 200, 0);
-        assertEquals("&6Pan §7x64", items.get(2).name());
-        assertEquals("$160", items.get(2).price());
-        assertTrue(items.get(2).available());
-        assertEquals("$2000 (faltan $1800)", items.get(3).price());
-        assertFalse(items.get(3).available());
+        assertEquals("&6Pan §7x64", items.get(FIRST).name());
+        assertEquals("$160", items.get(FIRST).price());
+        assertTrue(items.get(FIRST).available());
+        assertEquals("$2000 (faltan $1800)", items.get(FIRST + 1).price());
+        assertFalse(items.get(FIRST + 1).available());
     }
 
     @Test
     void sellingShowsTheSalePriceAndWhatThePlayerCarries() {
         List<ShopViewItem> items = items(2, true, 0, 20);
-        assertEquals("§6Modo: vender §7(tocá para comprar)", items.get(1).name());
-        assertEquals("$4 (tenés 20)", items.get(2).price(), "two lots are 32 breads; 20 are not enough");
-        assertFalse(items.get(2).available());
-        assertEquals("no se compra acá", items.get(3).price(), "the nuke has no sale price");
-        assertFalse(items.get(3).available());
+        assertEquals("§6Modo: vender §7(tocá para comprar)", items.get(2).name());
+        assertEquals("$4 (tenés 20)", items.get(FIRST).price(), "two lots are 32 breads; 20 are not enough");
+        assertFalse(items.get(FIRST).available());
+        assertEquals("no se compra acá", items.get(FIRST + 1).price(), "the nuke has no sale price");
+        assertFalse(items.get(FIRST + 1).available());
 
-        assertTrue(items(2, true, 0, 40).get(2).available());
-        assertEquals("$4", items(2, true, 0, 40).get(2).price());
+        assertTrue(items(2, true, 0, 40).get(FIRST).available());
+        assertEquals("$4", items(2, true, 0, 40).get(FIRST).price());
+    }
+
+    @Test
+    void categoriesShowHowManyProductsTheyHave() {
+        ShopCatalog catalog = new ShopCatalog(List.of(FOOD,
+            new ShopCategory("blocks", "Bloques", Material.STONE, 10, List.of(FOOD.entries().getFirst()))));
+        List<ShopViewItem> buttons = ShopModule.bedrockCategoryButtons(catalog);
+        assertEquals(List.of("2 productos", "1 producto"), buttons.stream().map(ShopViewItem::price).toList());
+        assertEquals("textures/blocks/stone", buttons.get(1).iconPath());
     }
 }
