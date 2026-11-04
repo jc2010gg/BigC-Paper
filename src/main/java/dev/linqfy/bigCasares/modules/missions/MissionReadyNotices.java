@@ -29,6 +29,12 @@ final class MissionReadyNotices {
         return fresh;
     }
 
+    /** The chat line for a mission that became ready: its title, its reward and where to claim it. */
+    static String message(MissionDefinition ready, java.util.function.DoubleFunction<String> money) {
+        return "§a¡Misión lista! §f" + MissionTideframeMenu.plain(ready.title()) + " §7· premio §a"
+            + MissionTideframeMenu.plain(money.apply(ready.reward())) + " §7· /misiones para cobrarla";
+    }
+
     /** The player left: forget them (at worst, a passive mission is announced once more on their return). */
     void forget(UUID playerId) {
         announced.remove(playerId);

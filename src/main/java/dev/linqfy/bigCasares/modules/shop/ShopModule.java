@@ -373,6 +373,11 @@ public final class ShopModule implements PluginModule {
             ShopTransactionResult result = selling
                 ? activeService.sell(player, entry, lots) : activeService.buy(player, entry, lots);
             player.sendMessage((result.success() ? "§a" : "§c") + result.message());
+            // A Bedrock form closes on every tap: show the category again (new balance and stock), as the Java
+            // screen stays open, so buying or selling more needs no trip back to the merchant.
+            if (player.isOnline()) {
+                catalog.category(categoryId).ifPresent(category -> openBedrockCategory(player, category));
+            }
         });
     }
 

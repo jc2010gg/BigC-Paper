@@ -354,7 +354,7 @@ public final class MissionModule implements PluginModule {
     /** Tells the player, once per mission and period, that it just became ready to claim (Java and Bedrock, in chat). */
     private void announceReady(Player player, MissionPlayerState before, MissionPlayerState after) {
         for (MissionDefinition ready : readyNotices.toAnnounce(before, after)) {
-            player.sendMessage("§a¡Misión lista! §f" + MissionTideframeMenu.plain(ready.title()) + " §7· /misiones para cobrarla");
+            player.sendMessage(MissionReadyNotices.message(ready, economyGateway::format));
         }
     }
 

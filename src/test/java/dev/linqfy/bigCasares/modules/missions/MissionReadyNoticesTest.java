@@ -40,6 +40,14 @@ class MissionReadyNoticesTest {
     }
 
     @Test
+    void theMessageNamesTheMissionAndItsReward() {
+        var definition = new MissionDefinition("piedra", MissionScope.DAILY, "§fTener 32 de piedra", "", MissionType.HOLD_EXACT_ITEM_COUNT,
+            32, 250, 1, true, Map.of());
+        assertEquals("§a¡Misión lista! §fTener 32 de piedra §7· premio §a$250 §7· /misiones para cobrarla",
+            MissionReadyNotices.message(definition, amount -> "§e$" + (int) amount));
+    }
+
+    @Test
     void aPlayerWhoLeftIsToldAgainAtMostOnce() {
         MissionReadyNotices notices = new MissionReadyNotices();
         notices.toAnnounce(holding(0, TODAY), holding(32, TODAY));
