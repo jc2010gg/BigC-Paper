@@ -52,6 +52,7 @@ public final class MissionModule implements PluginModule {
     private final Map<UUID, MissionPlayerState> stateCache = new LinkedHashMap<>();
     private final Set<UUID> dirtyPlayers = new LinkedHashSet<>();
     private final MissionReadyNotices readyNotices = new MissionReadyNotices();
+    private final MissionRecords records;
     private BukkitRuntimeRegistrations registrations;
     private volatile MissionPlaceholderValues placeholderValues;
     private Object placeholderExpansion;
@@ -60,6 +61,24 @@ public final class MissionModule implements PluginModule {
 
     public MissionModule(BigCasares plugin) {
         this.plugin = plugin;
+        this.records = new MissionRecords(dev.linqfy.bigCasares.platform.PlayerStrings.of(plugin));
+    }
+
+    /** The day of the current daily period (it starts at the configured reset hour). */
+    private java.time.LocalDate today() {
+        int hour = plugin.getConfig().getInt("mission-system.reset.daily-hour", 0);
+        ZoneId zone = ZoneId.systemDefault();
+        return MissionReroll.periodStart(Instant.now(), hour, zone).atZone(zone).toLocalDate();
+    }
+
+    /** The extra line of a missions tab: the streak on the daily one, this week's claimed money on the weekly one. */
+    String summary(Player player, MissionScope scope) {
+        if (scope == MissionScope.DAILY) {
+            int days = records.streak(player, today());
+            return days == 0 ? "" : "racha " + days + (days == 1 ? " día" : " días");
+        }
+        double total = records.weekTotal(player, getOrCreateState(player).weeklyResetsAt());
+        return total <= 0 || economyGateway == null ? "" : "esta semana " + MissionTideframeMenu.plain(economyGateway.format(total));
     }
 
     @Override
@@ -93,7 +112,7 @@ public final class MissionModule implements PluginModule {
         this.hudController = new MissionHudController(this, economyGateway);
         // Java players with Tideframe see the lists on its screen; its Reclamar uses the same claim as the inventory menu.
         MissionTideframeMenu menu = new MissionTideframeMenu(this::getOrCreateState, this::countClaimables, economyGateway::format,
-            () -> tideframe.get(), this::claimAll, this::rerollCheck, this::rerollDaily, System::nanoTime);
+            () -> tideframe.get(), this::claimAll, this::rerollCheck, this::rerollDaily, System::nanoTime, this::summary);
         this.tideframeMenu = menu;
 
         scope.register("module-state", this::clearRuntimeState);
@@ -158,7 +177,7 @@ public final class MissionModule implements PluginModule {
         Long firstTap = bedrockRerollTaps.get(playerId);
         boolean confirming = firstTap != null && System.nanoTime() - firstTap <= MissionReroll.CONFIRM_NANOS;
         MissionBedrockForm.Page page = MissionBedrockForm.build(state, scope, countClaimables(state),
-            economyGateway::format, forms.glyphs(), Instant.now(), rerollCheck(player), confirming);
+            economyGateway::format, forms.glyphs(), Instant.now(), rerollCheck(player), confirming, summary(player, scope));
         long generation = bedrockGeneration;
         return forms.send(playerId, page.title(), page.content(), page.texts(),
             index -> answerBedrock(playerId, generation, scope, page, index));
@@ -216,6 +235,12 @@ public final class MissionModule implements PluginModule {
         stateCache.put(player.getUniqueId(), claimed);
         dirtyPlayers.remove(player.getUniqueId());
         double amount = sumClaimables(state);
+        // What really changed from ready to claimed: this week's total, and the streak once every daily is claimed.
+        records.addClaimed(player, claimed.weeklyResetsAt(), MissionOrder.pendingReward(state) - MissionOrder.pendingReward(claimed));
+        if (!claimed.dailyAssignments().isEmpty()
+            && claimed.dailyAssignments().values().stream().allMatch(assignment -> assignment.snapshot().claimed())) {
+            records.dailiesDone(player, today());
+        }
         if (amount > 0.0) {
             dev.linqfy.bigCasares.platform.FeedbackSounds.reward(player);
             player.sendMessage("§aReclamaste " + economyGateway.format(amount) + " en recompensas.");

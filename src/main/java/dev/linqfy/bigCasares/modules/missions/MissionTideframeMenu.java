@@ -41,6 +41,8 @@ final class MissionTideframeMenu implements TideframeScreenHandler {
     private final Function<Player, MissionReroll.Check> rerollCheck;
     private final Consumer<Player> reroll;
     private final LongSupplier clock;
+    /** The tab's extra line: the streak on Diarias, this week's claimed money on Semanales ("" for none). */
+    private final java.util.function.BiFunction<Player, MissionScope, String> summary;
     private final Map<UUID, MissionScope> tabs = new ConcurrentHashMap<>();
     /** When each player first tapped "Cambiar" ({@link System#nanoTime()}): a second tap soon after confirms it. */
     private final Map<UUID, Long> confirming = new ConcurrentHashMap<>();
@@ -49,7 +51,8 @@ final class MissionTideframeMenu implements TideframeScreenHandler {
     /** Without "Cambiar" (the button stays hidden). */
     MissionTideframeMenu(Function<Player, MissionPlayerState> states, Function<MissionPlayerState, Integer> claimables,
                          DoubleFunction<String> money, Supplier<TideframeUi> ui, Consumer<Player> claim) {
-        this(states, claimables, money, ui, claim, player -> MissionReroll.Check.USED_TODAY, player -> { }, System::nanoTime);
+        this(states, claimables, money, ui, claim, player -> MissionReroll.Check.USED_TODAY, player -> { }, System::nanoTime,
+            (player, scope) -> "");
     }
 
     /**
@@ -58,7 +61,8 @@ final class MissionTideframeMenu implements TideframeScreenHandler {
      */
     MissionTideframeMenu(Function<Player, MissionPlayerState> states, Function<MissionPlayerState, Integer> claimables,
                          DoubleFunction<String> money, Supplier<TideframeUi> ui, Consumer<Player> claim,
-                         Function<Player, MissionReroll.Check> rerollCheck, Consumer<Player> reroll, LongSupplier clock) {
+                         Function<Player, MissionReroll.Check> rerollCheck, Consumer<Player> reroll, LongSupplier clock,
+                         java.util.function.BiFunction<Player, MissionScope, String> summary) {
         this.states = Objects.requireNonNull(states, "states");
         this.claimables = Objects.requireNonNull(claimables, "claimables");
         this.money = Objects.requireNonNull(money, "money");
@@ -67,6 +71,7 @@ final class MissionTideframeMenu implements TideframeScreenHandler {
         this.rerollCheck = Objects.requireNonNull(rerollCheck, "rerollCheck");
         this.reroll = Objects.requireNonNull(reroll, "reroll");
         this.clock = Objects.requireNonNull(clock, "clock");
+        this.summary = Objects.requireNonNull(summary, "summary");
     }
 
     /**
@@ -166,7 +171,9 @@ final class MissionTideframeMenu implements TideframeScreenHandler {
         tideframe.setList(player, LIST, rows);
         tideframe.setVariable(player, "bigc_titulo", daily ? "Diarias" : "Semanales");
         int hidden = assignments.size() - rows.size();
+        String extra = summary.apply(player, scope);
         tideframe.setVariable(player, "bigc_reinicio", "se renuevan en " + MissionTexts.formatTimeRemaining(Duration.between(Instant.now(), resetsAt))
+            + (extra.isEmpty() ? "" : " · " + extra)
             + (hidden > 0 ? " · +" + hidden + " en el menú clásico" : ""));
         int pending = claimables.apply(state);
         tideframe.setVariable(player, "bigc_pendientes", pending == 0 ? "Nada para cobrar"

@@ -43,7 +43,7 @@ final class MissionBedrockForm {
     /** Without "Cambiar". */
     static Page build(MissionPlayerState state, MissionScope scope, int claimables, DoubleFunction<String> money,
                       boolean glyphs, Instant now) {
-        return build(state, scope, claimables, money, glyphs, now, MissionReroll.Check.USED_TODAY, false);
+        return build(state, scope, claimables, money, glyphs, now, MissionReroll.Check.USED_TODAY, false, "");
     }
 
     /**
@@ -51,7 +51,7 @@ final class MissionBedrockForm {
      * {@code confirming}: the player tapped it a moment ago, so this tap confirms.
      */
     static Page build(MissionPlayerState state, MissionScope scope, int claimables, DoubleFunction<String> money,
-                      boolean glyphs, Instant now, MissionReroll.Check reroll, boolean confirming) {
+                      boolean glyphs, Instant now, MissionReroll.Check reroll, boolean confirming, String summary) {
         boolean daily = scope == MissionScope.DAILY;
         Collection<MissionAssignment> assignments = (daily ? state.dailyAssignments() : state.weeklyAssignments()).values();
         Instant resetsAt = daily ? state.dailyResetsAt() : state.weeklyResetsAt();
@@ -60,6 +60,9 @@ final class MissionBedrockForm {
             .append('\n')
             .append(claimables == 0 ? "§8Nada para cobrar"
                 : "§e" + claimables + " para cobrar §7· §a" + MissionTideframeMenu.plain(money.apply(MissionOrder.pendingReward(state))));
+        if (!summary.isEmpty()) {
+            content.append("\n§6").append(summary);
+        }
         if (assignments.isEmpty()) {
             content.append("\n\n§7No hay misiones activas");
         }

@@ -155,6 +155,8 @@ Tideframe, no el dibujo ni los clics en un cliente. Ver [docs/tideframe.md](docs
 - [ ] `/bigcasares historial`: muestra tus últimas compras y ventas de cualquier menú, la más nueva primero, también después de reiniciar el servidor.
 - [ ] Favoritos: Shift + clic izquierdo (Java) y modo favoritos (Bedrock) marcan y desmarcan; "★ Favoritos" aparece
   primera, compra el producto real y sobrevive a salir y reiniciar el servidor; vacía, desaparece.
+- [ ] Misiones: cobrar suma a "esta semana $X" (pestaña Semanales) y se reinicia con la semana; cobrar todas las
+  diarias suma un día a la "racha" (Diarias), que se corta si pasa un día sin hacerlo. Ambos sobreviven a reiniciar.
 - [ ] Entrar con misiones listas sin cobrar: a los 3 segundos llega "Tenés N misiones para cobrar"; sin nada, no llega.
 - [ ] "Cambiar" en Diarias (Java) y "Cambiar las diarias" (Bedrock): el primer toque pregunta, el segundo cambia;
   no aparece con una diaria lista sin cobrar ni dos veces el mismo día; `/misiones reroll` también se niega.

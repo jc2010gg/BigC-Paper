@@ -86,6 +86,9 @@ puede chocar con otros packs o con Iris/OptiFine.
   categoria "★ Favoritos" aparece primera mientras haya alguno. Se guardan con el jugador (PersistentDataContainer,
   clave `bigcasares:shop_favorites_v1`, lineas `categoria/entrada`, hasta 54); los productos que el catalogo ya no
   tiene se saltean pero no se borran.
+- Misiones guardan con el jugador cuanto cobro en la semana (`bigcasares:missions_week_v1`, se reinicia con la
+  semana) y su racha de dias con todas las diarias cobradas (`bigcasares:missions_streak_v1`, se corta si pasa un
+  dia). Se ven junto al reinicio: la racha en Diarias y "esta semana $X" en Semanales, en Java y Bedrock.
 - Al entrar, si hay misiones para cobrar, el jugador recibe a los 3 segundos "Tenés N misiones para cobrar ($X)".
 - "Cambiar" (Java, pestaña Diarias) y "Cambiar las diarias" (Bedrock) reemplazan las diarias una vez por dia,
   con un segundo toque en menos de 3 segundos para confirmar. Nunca mientras haya una diaria lista sin cobrar:

@@ -119,8 +119,10 @@ class MissionTideframeMenuTest {
         java.util.concurrent.atomic.AtomicReference<MissionReroll.Check> check =
             new java.util.concurrent.atomic.AtomicReference<>(MissionReroll.Check.ALLOWED);
         MissionTideframeMenu withReroll = new MissionTideframeMenu(player -> state, MissionTideframeMenuTest::ready,
-            amount -> "$" + (int) amount, () -> ui, this::claim, player -> check.get(), player -> rerolled.add(player.getName()), clock::get);
+            amount -> "$" + (int) amount, () -> ui, this::claim, player -> check.get(), player -> rerolled.add(player.getName()), clock::get,
+            (player, scope) -> scope == MissionScope.DAILY ? "racha 3 días" : "esta semana $900");
         withReroll.open(juan.player, MissionScope.DAILY, () -> { });
+        assertTrue(ui.variable(juan.player, "bigc_reinicio").endsWith(" · racha 3 días"), "the tab's summary line");
         assertEquals("1", ui.variable(juan.player, "bigc_puede_cambiar"));
         assertEquals("Cambiar", ui.variable(juan.player, "bigc_cambiar"));
 
@@ -146,6 +148,7 @@ class MissionTideframeMenuTest {
         check.set(MissionReroll.Check.ALLOWED);
         ui.click(juan.player, SCREEN, "semanales", -1, false);
         assertEquals("0", ui.variable(juan.player, "bigc_puede_cambiar"), "only on the daily tab");
+        assertTrue(ui.variable(juan.player, "bigc_reinicio").endsWith(" · esta semana $900"));
         ui.click(juan.player, SCREEN, "cambiar", -1, false);
         ui.click(juan.player, SCREEN, "cambiar", -1, false);
         assertEquals(List.of("juan"), rerolled);
