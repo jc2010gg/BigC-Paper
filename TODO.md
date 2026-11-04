@@ -149,7 +149,9 @@ Tideframe, no el dibujo ni los clics en un cliente. Ver [docs/tideframe.md](docs
 - [ ] `/bigcasares tideframe` como operador: los números coinciden con los jugadores conectados y el pack;
   abrir la tienda saltando suma una caída "en el aire".
 - [ ] Shift + clic derecho sobre un producto (Java): vende todos los lotes enteros de una vez, un solo pago.
-- [ ] Sonidos: compra o venta correcta, rechazo y cobro de misiones se oyen solo para quien los hizo (Java y Bedrock).
+- [ ] Sonidos: compra o venta correcta, rechazo y cobro de misiones se oyen solo para quien los hizo (Java y Bedrock,
+  también en el menú de inventario clásico), una sola vez por operación.
+- [ ] `/bigcasares historial`: muestra tus últimas compras y ventas de cualquier menú, la más nueva primero.
 - [ ] Un producto o misión con nombre largo: se achica o termina en "…" sin pisar la columna de al lado.
 - [ ] `/shop` y `/misiones` dos veces seguidas con la pantalla abierta: los botones siguen funcionando.
 - [ ] `/tideframe reload` con una pantalla `bigc_*` abierta: no vuelve sola, el jugador ve el aviso y el

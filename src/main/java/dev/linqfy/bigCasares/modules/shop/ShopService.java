@@ -4,6 +4,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.ToIntFunction;
 
 public final class ShopService {
@@ -11,15 +12,26 @@ public final class ShopService {
     private final ShopItemResolver resolver;
     private final ShopEconomyGateway economy;
     private final ToIntFunction<Player> postGrantEnforcer;
+    private final BiConsumer<Player, ShopTransactionResult> observer;
 
     public ShopService(ShopItemResolver resolver, ShopEconomyGateway economy) {
         this(resolver, economy, player -> 0);
     }
 
     public ShopService(ShopItemResolver resolver, ShopEconomyGateway economy, ToIntFunction<Player> postGrantEnforcer) {
+        this(resolver, economy, postGrantEnforcer, (player, result) -> { });
+    }
+
+    /**
+     * {@code observer} hears every purchase and sale a player makes, done or refused, from any menu (inventory,
+     * Tideframe or Bedrock form): the shop's sounds and history.
+     */
+    public ShopService(ShopItemResolver resolver, ShopEconomyGateway economy, ToIntFunction<Player> postGrantEnforcer,
+                       BiConsumer<Player, ShopTransactionResult> observer) {
         this.resolver = resolver;
         this.economy = economy;
         this.postGrantEnforcer = postGrantEnforcer;
+        this.observer = observer;
     }
 
     public ShopTransactionResult buy(ShopEntry entry) {
@@ -60,6 +72,10 @@ public final class ShopService {
         if (player == null) {
             return ShopTransactionResult.success("Compra realizada.", resolver.createStack(entry), postGrantEnforcer.applyAsInt(null));
         }
+        return observed(player, buyLots(player, entry, lots));
+    }
+
+    private ShopTransactionResult buyLots(Player player, ShopEntry entry, int lots) {
         double price = entry.buyPrice() * lots;
         if (!economy.has(player, price)) {
             return ShopTransactionResult.failure("Saldo insuficiente.");
@@ -88,6 +104,10 @@ public final class ShopService {
     /** {@code lots} times the entry in one operation: all of them or none, paid once. */
     public ShopTransactionResult sell(Player player, ShopEntry entry, int lots) {
         requireLots(lots);
+        return observed(player, sellLots(player, entry, lots));
+    }
+
+    private ShopTransactionResult sellLots(Player player, ShopEntry entry, int lots) {
         ItemStack[] contents = player.getInventory().getStorageContents();
         int total = owned(player, entry);
 
@@ -103,6 +123,11 @@ public final class ShopService {
         removeMatching(contents, entry, needed);
         player.getInventory().setStorageContents(contents);
         return ShopTransactionResult.success("Vendiste " + entry.id() + times(lots) + " por " + economy.format(price) + ".", null);
+    }
+
+    private ShopTransactionResult observed(Player player, ShopTransactionResult result) {
+        observer.accept(player, result);
+        return result;
     }
 
     /** How many items of the entry the player carries (the canonical match the sale uses). */

@@ -47,6 +47,7 @@ public final class ShopModule implements PluginModule {
     private java.util.function.Supplier<dev.linqfy.bigCasares.modules.tideframe.TideframeUi> tideframeNavigation =
         () -> dev.linqfy.bigCasares.modules.tideframe.TideframeUi.NONE;
     private final ShopFormGeneration formGeneration = new ShopFormGeneration();
+    private final ShopHistory history = new ShopHistory();
     /** The id of the Bedrock form's quantity button; never a catalog entry id (those come from shop.yml keys). */
     static final String QUANTITY_BUTTON = "#cantidad";
     /** The id of the Bedrock form's buy/sell switch. */
@@ -121,7 +122,14 @@ public final class ShopModule implements PluginModule {
         this.service = new ShopService(
             new ShopItemResolver(plugin.getCustomItemRegistry()),
             economyGateway,
-            plugin::enforceInventoryLimits
+            plugin::enforceInventoryLimits,
+            // Every menu's purchases and sales: a sound for the player, and the done ones in their history.
+            (player, result) -> {
+                FeedbackSounds.result(player, result.success());
+                if (result.success()) {
+                    history.record(player.getUniqueId(), result.message());
+                }
+            }
         );
         if (guiController != null) {
             guiController.closeAll();
@@ -139,12 +147,8 @@ public final class ShopModule implements PluginModule {
         ShopEconomyGateway ownedEconomy = economyGateway;
         ShopCatalog ownedCatalog = catalog;
         ShopTideframeMenu menu = new ShopTideframeMenu(() -> ownedCatalog, new ShopTideframeMenu.Actions() {
-            @Override public ShopTransactionResult buy(Player player, ShopEntry entry, int lots) {
-                return withSound(player, ownedService.buy(player, entry, lots));
-            }
-            @Override public ShopTransactionResult sell(Player player, ShopEntry entry, int lots) {
-                return withSound(player, ownedService.sell(player, entry, lots));
-            }
+            @Override public ShopTransactionResult buy(Player player, ShopEntry entry, int lots) { return ownedService.buy(player, entry, lots); }
+            @Override public ShopTransactionResult sell(Player player, ShopEntry entry, int lots) { return ownedService.sell(player, entry, lots); }
             @Override public String balance(Player player) { return ownedEconomy.format(ownedEconomy.balance(player)); }
             @Override public double funds(Player player) { return ownedEconomy.balance(player); }
             @Override public int owned(Player player, ShopEntry entry) { return ownedService.owned(player, entry); }
@@ -353,16 +357,15 @@ public final class ShopModule implements PluginModule {
             if (activeService == null) {
                 return;
             }
-            ShopTransactionResult result = withSound(player, selling
-                ? activeService.sell(player, entry, lots) : activeService.buy(player, entry, lots));
+            ShopTransactionResult result = selling
+                ? activeService.sell(player, entry, lots) : activeService.buy(player, entry, lots);
             player.sendMessage((result.success() ? "§a" : "§c") + result.message());
         });
     }
 
-    /** The sound of a purchase or sale (ok or refused) for the player who made it. */
-    private static ShopTransactionResult withSound(Player player, ShopTransactionResult result) {
-        FeedbackSounds.result(player, result.success());
-        return result;
+    /** The player's last purchases and sales, from every menu (kept while the server runs). */
+    public ShopHistory history() {
+        return history;
     }
 
     private Player resolveActiveFormPlayer(UUID playerId, long generation) {

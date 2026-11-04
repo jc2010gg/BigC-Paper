@@ -71,6 +71,18 @@ class ShopServiceLotsTest {
     }
 
     @Test
+    void theObserverHearsEachPlayerOperationOnceDoneOrRefused() {
+        List<String> heard = new ArrayList<>();
+        ShopService observed = new ShopService(new ShopItemResolver(new CustomItemRegistry()), economy, ignored -> 0,
+            (who, result) -> heard.add((result.success() ? "ok " : "no ") + result.message()));
+        observed.buy(player, STONE, 2);
+        observed.sell(player, STONE, 1);
+        assertEquals(List.of("ok Compraste stone x2 por $128.", "no No tenes suficientes items para vender."), heard);
+        observed.buy(null, STONE);
+        assertEquals(2, heard.size(), "a purchase with no player (the inventory preview) is not the player's operation");
+    }
+
+    @Test
     void ownedCountsOnlyMatchingItems() {
         storage[0] = new ItemStack(Material.STONE, 64);
         storage[3] = new ItemStack(Material.DIRT, 64);

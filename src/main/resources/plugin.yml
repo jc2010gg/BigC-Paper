@@ -248,6 +248,10 @@ permissions:
     description: View the embedded Tideframe engine state (pack, screens, players who can see them)
     default: op
 
+  bigcasares.shop.history:
+    description: View your own last shop purchases and sales
+    default: true
+
   bigcasares.items.reload:
     description: Reload the BigCasares declarative item catalog
     default: op
