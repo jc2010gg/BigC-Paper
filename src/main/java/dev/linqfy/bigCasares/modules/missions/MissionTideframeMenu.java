@@ -132,7 +132,8 @@ final class MissionTideframeMenu implements TideframeScreenHandler {
         tideframe.setVariable(player, "bigc_reinicio", "se renuevan en " + MissionTexts.formatTimeRemaining(Duration.between(Instant.now(), resetsAt))
             + (hidden > 0 ? " · +" + hidden + " en el menú clásico" : ""));
         int pending = claimables.apply(state);
-        tideframe.setVariable(player, "bigc_pendientes", pending == 0 ? "Nada para cobrar" : pending + " para cobrar");
+        tideframe.setVariable(player, "bigc_pendientes", pending == 0 ? "Nada para cobrar"
+            : pending + " para cobrar · " + plain(money.apply(MissionOrder.pendingReward(state))));
         tideframe.setVariable(player, "bigc_cobrables", String.valueOf(pending));
         tideframe.setVariable(player, "bigc_vacio", rows.isEmpty() ? "No hay misiones activas" : "");
     }

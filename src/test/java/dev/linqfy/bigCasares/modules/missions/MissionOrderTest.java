@@ -51,6 +51,13 @@ class MissionOrderTest {
     }
 
     @Test
+    void pendingRewardAddsEveryReadyUnclaimedMissionOfBothLists() {
+        var state = state(List.of(mission("a", 10, true, false), mission("b", 10, true, true), mission("c", 3, false, false)),
+            List.of(mission("w", 10, true, false)));
+        assertEquals(200.0, MissionOrder.pendingReward(state), "a and w, 100 each; b was claimed, c is running");
+    }
+
+    @Test
     void aMissionCompletedAndClaimedInOneStepIsNotAnnounced() {
         var before = state(List.of(mission("a", 9, false, false)), List.of());
         var after = state(List.of(mission("a", 10, true, true)), List.of());

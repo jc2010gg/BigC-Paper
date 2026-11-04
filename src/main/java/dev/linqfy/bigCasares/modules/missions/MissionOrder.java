@@ -29,6 +29,19 @@ final class MissionOrder {
         return ready;
     }
 
+    /** The money "Reclamar" would pay now: every ready, unclaimed reward, daily and weekly. */
+    static double pendingReward(MissionPlayerState state) {
+        double total = 0;
+        for (Map<String, MissionAssignment> assignments : List.of(state.dailyAssignments(), state.weeklyAssignments())) {
+            for (MissionAssignment assignment : assignments.values()) {
+                if (assignment.snapshot().completed() && !assignment.snapshot().claimed()) {
+                    total += assignment.definition().reward();
+                }
+            }
+        }
+        return total;
+    }
+
     private static void collect(Map<String, MissionAssignment> before, Map<String, MissionAssignment> after,
                                 List<MissionDefinition> ready) {
         for (MissionAssignment now : after.values()) {

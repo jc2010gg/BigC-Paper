@@ -48,7 +48,8 @@ final class MissionBedrockForm {
         StringBuilder content = new StringBuilder("§7Se renuevan en ")
             .append(MissionTexts.formatTimeRemaining(Duration.between(now, resetsAt)))
             .append('\n')
-            .append(claimables == 0 ? "§8Nada para cobrar" : "§e" + claimables + " para cobrar");
+            .append(claimables == 0 ? "§8Nada para cobrar"
+                : "§e" + claimables + " para cobrar §7· §a" + MissionTideframeMenu.plain(money.apply(MissionOrder.pendingReward(state))));
         if (assignments.isEmpty()) {
             content.append("\n\n§7No hay misiones activas");
         }

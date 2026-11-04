@@ -55,7 +55,7 @@ class MissionBedrockFormTest {
         assertTrue(page.texts().get(3).endsWith("§b16/64 §a$250"), page.texts().get(3));
         assertTrue(page.texts().get(4).contains("§8Cobrada"), "claimed last");
         assertEquals("§e§lReclamar §r§e(1)", page.texts().get(5));
-        assertEquals("§7Se renuevan en 3h 5m\n§e1 para cobrar", page.content());
+        assertEquals("§7Se renuevan en 3h 5m\n§e1 para cobrar §7· §a$400", page.content());
     }
 
     @Test

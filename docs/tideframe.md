@@ -78,7 +78,9 @@ puede chocar con otros packs o con Iris/OptiFine.
   desde cualquier menu: `ShopService` avisa cada operacion de un jugador. Las que salen bien quedan en
   `/bigcasares historial` (permiso `bigcasares.shop.history`, todos): las ultimas 10, en memoria hasta reiniciar.
 - Misiones: las listas para cobrar van primero (Java y Bedrock), asi nunca quedan entre las ocultas. Cuando una
-  mision queda lista, el jugador recibe un aviso en el chat una sola vez.
+  mision queda lista, el jugador recibe un aviso en el chat una sola vez, con el premio. Las dos ediciones
+  muestran cuanta plata pagaria Reclamar ("2 para cobrar · $650"). En Bedrock, despues de comprar o vender el
+  formulario de la categoria vuelve a abrirse con el saldo nuevo, como la pantalla Java que sigue abierta.
 - Textos largos: el motor ya achica las lineas que no entran en su columna y, si igual no entran, las corta
   con "…" (`TextFit`, pantallas de esquema 9 que no usan la calidad "legacy", como `bigc_*`).
 - `/bigcasares tideframe` (permiso `bigcasares.tideframe.status`, op): si el motor corre, si envia su pack,

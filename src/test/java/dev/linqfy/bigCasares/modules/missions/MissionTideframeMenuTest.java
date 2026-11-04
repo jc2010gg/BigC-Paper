@@ -75,7 +75,7 @@ class MissionTideframeMenuTest {
         assertEquals(List.of("$400", "$250", "$150"), column(juan.player, "premio"));
         assertEquals("Diarias", ui.variable(juan.player, "bigc_titulo"));
         assertTrue(ui.variable(juan.player, "bigc_reinicio").startsWith("se renuevan en 4h") || ui.variable(juan.player, "bigc_reinicio").startsWith("se renuevan en 5h"));
-        assertEquals("1 para cobrar", ui.variable(juan.player, "bigc_pendientes"));
+        assertEquals("1 para cobrar · $400", ui.variable(juan.player, "bigc_pendientes"), "and how much Reclamar pays");
         assertEquals("1", ui.variable(juan.player, "bigc_cobrables"), "the screen shows Reclamar only then");
         assertEquals("", ui.variable(juan.player, "bigc_vacio"));
     }
