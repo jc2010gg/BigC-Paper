@@ -12,8 +12,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 /**
- * Each player's last purchases and sales that went through, newest first, from any menu. Kept in memory while the
- * server runs (a restart forgets it); the economy plugin stays the record of the money itself.
+ * Each player's last purchases and sales that went through, newest first, from any menu. In memory, and kept with the
+ * player too ({@link #encode}/{@link #restore}) so it survives restarts; the economy plugin stays the record of the
+ * money itself.
  */
 public final class ShopHistory {
     static final int KEPT = 10;
@@ -41,6 +42,48 @@ public final class ShopHistory {
         }
     }
 
+    /** The key it is kept under with the player (PlayerStrings), so it survives restarts. */
+    static final String KEY = "shop_history_v1";
+
+    /** The player's entries as text to keep with them: one "epoch millis TAB message" line each, newest first. */
+    String encode(UUID playerId) {
+        Deque<Entry> kept = entries.get(playerId);
+        if (kept == null) {
+            return "";
+        }
+        StringBuilder out = new StringBuilder();
+        synchronized (kept) {
+            for (Entry entry : kept) {
+                if (!out.isEmpty()) out.append('\n');
+                out.append(entry.at().toEpochMilli()).append('\t').append(entry.message().replace('\n', ' ').replace('\t', ' '));
+            }
+        }
+        return out.toString();
+    }
+
+    /**
+     * Loads what was kept with the player (a join after a restart). Only when nothing is in memory for them yet, so a
+     * newer session's operations are never replaced; unreadable lines are skipped.
+     */
+    void restore(UUID playerId, String encoded) {
+        if (encoded == null || encoded.isBlank() || entries.containsKey(playerId)) {
+            return;
+        }
+        Deque<Entry> kept = new ArrayDeque<>();
+        for (String line : encoded.split("\n")) {
+            int tab = line.indexOf('\t');
+            if (tab <= 0 || kept.size() == KEPT) continue;
+            try {
+                kept.addLast(new Entry(Instant.ofEpochMilli(Long.parseLong(line.substring(0, tab))), line.substring(tab + 1)));
+            } catch (NumberFormatException unreadable) {
+                // skipped
+            }
+        }
+        if (!kept.isEmpty()) {
+            entries.putIfAbsent(playerId, kept);
+        }
+    }
+
     /** The player's last operation that went through, if any (any thread). */
     public java.util.Optional<String> latest(UUID playerId) {
         Deque<Entry> kept = entries.get(playerId);
@@ -58,7 +101,7 @@ public final class ShopHistory {
         List<String> lines = new ArrayList<>();
         lines.add("§6Tus últimas operaciones en la tienda");
         if (kept == null || kept.isEmpty()) {
-            lines.add("§7Todavía no compraste ni vendiste nada desde que arrancó el servidor.");
+            lines.add("§7Todavía no compraste ni vendiste nada.");
             return lines;
         }
         Instant now = clock.get();

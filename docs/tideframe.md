@@ -77,7 +77,7 @@ puede chocar con otros packs o con Iris/OptiFine.
   Shift + clic derecho (Java) vende todos los lotes enteros que el jugador lleva, hasta 64, en una sola
   operacion. Compras, ventas y cobros de misiones suenan (exito, rechazo, recompensa) solo para quien los hizo,
   desde cualquier menu: `ShopService` avisa cada operacion de un jugador. Las que salen bien quedan en
-  `/bigcasares historial` (permiso `bigcasares.shop.history`, todos): las ultimas 10, en memoria hasta reiniciar.
+  `/bigcasares historial` (permiso `bigcasares.shop.history`, todos): las ultimas 10, guardadas con el jugador (`bigcasares:shop_history_v1`), asi que sobreviven reinicios.
 - Misiones: las listas para cobrar van primero (Java y Bedrock), asi nunca quedan entre las ocultas. Cuando una
   mision queda lista, el jugador recibe un aviso en el chat una sola vez, con el premio. Las dos ediciones
   muestran cuanta plata pagaria Reclamar ("2 para cobrar · $650"). En Bedrock, despues de comprar o vender el

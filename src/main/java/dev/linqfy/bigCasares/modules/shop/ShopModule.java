@@ -49,6 +49,7 @@ public final class ShopModule implements PluginModule {
     private final ShopFormGeneration formGeneration = new ShopFormGeneration();
     private final ShopHistory history = new ShopHistory();
     private final ShopFavorites favorites;
+    private final dev.linqfy.bigCasares.platform.PlayerStrings playerStrings;
     /** The id of the Bedrock form's quantity button; never a catalog entry id (those come from shop.yml keys). */
     static final String QUANTITY_BUTTON = "#cantidad";
     /** The id of the Bedrock form's buy/sell switch. */
@@ -68,7 +69,8 @@ public final class ShopModule implements PluginModule {
 
     public ShopModule(BigCasares plugin) {
         this.plugin = plugin;
-        this.favorites = new ShopFavorites(dev.linqfy.bigCasares.platform.PlayerStrings.of(plugin));
+        this.playerStrings = dev.linqfy.bigCasares.platform.PlayerStrings.of(plugin);
+        this.favorites = new ShopFavorites(playerStrings);
     }
 
     @Override
@@ -87,6 +89,14 @@ public final class ShopModule implements PluginModule {
     public void onEnable(RuntimeRegistrationScope scope) {
         this.registrations = new BukkitRuntimeRegistrations(plugin, scope);
         scope.register("module-state", this::clearRuntimeState);
+        // The history kept with each player comes back when they join (and for those online at a reload).
+        registrations.registerListener("shop-history-restore", new org.bukkit.event.Listener() {
+            @org.bukkit.event.EventHandler
+            public void onJoin(org.bukkit.event.player.PlayerJoinEvent event) {
+                restoreHistory(event.getPlayer());
+            }
+        });
+        plugin.getServer().getOnlinePlayers().forEach(this::restoreHistory);
         plugin.saveResource("shop.yml", false);
         reload();
     }
@@ -132,6 +142,7 @@ public final class ShopModule implements PluginModule {
                 FeedbackSounds.result(player, result.success());
                 if (result.success()) {
                     history.record(player.getUniqueId(), result.message());
+                    playerStrings.set(player, ShopHistory.KEY, history.encode(player.getUniqueId()));
                 }
             }
         );
@@ -436,9 +447,13 @@ public final class ShopModule implements PluginModule {
             () -> openBedrockCategories(player));
     }
 
-    /** The player's last purchases and sales, from every menu (kept while the server runs). */
+    /** The player's last purchases and sales, from every menu (kept with the player across restarts). */
     public ShopHistory history() {
         return history;
+    }
+
+    private void restoreHistory(Player player) {
+        playerStrings.get(player, ShopHistory.KEY).ifPresent(encoded -> history.restore(player.getUniqueId(), encoded));
     }
 
     private Player resolveActiveFormPlayer(UUID playerId, long generation) {

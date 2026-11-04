@@ -33,8 +33,26 @@ class ShopHistoryTest {
         assertEquals(1 + ShopHistory.KEPT, lines.size());
         assertEquals("§8recién §fop 11", lines.get(1));
         assertEquals("§8recién §fop 2", lines.getLast());
-        assertEquals("§7Todavía no compraste ni vendiste nada desde que arrancó el servidor.",
-            history.lines(UUID.randomUUID()).get(1));
+        assertEquals("§7Todavía no compraste ni vendiste nada.", history.lines(UUID.randomUUID()).get(1));
+    }
+
+    @Test
+    void whatIsKeptWithThePlayerComesBackAfterARestart() {
+        history.record(juan, "Compraste stone por $64.");
+        now.set(now.get().plusSeconds(120));
+        history.record(juan, "Vendiste\tbread\npor $2.");
+        String kept = history.encode(juan);
+
+        ShopHistory afterRestart = new ShopHistory(now::get);
+        afterRestart.restore(juan, kept + "\nbasura\n12x\tnada");
+        assertEquals(java.util.Optional.of("Vendiste bread por $2."), afterRestart.latest(juan), "tabs and line breaks flattened");
+        assertEquals(List.of("§6Tus últimas operaciones en la tienda", "§8recién §fVendiste bread por $2.",
+            "§8hace 2 min §fCompraste stone por $64."), afterRestart.lines(juan), "unreadable lines skipped");
+
+        afterRestart.record(juan, "Compraste apple por $5.");
+        afterRestart.restore(juan, kept);
+        assertEquals(java.util.Optional.of("Compraste apple por $5."), afterRestart.latest(juan),
+            "a later restore never replaces this session's operations");
     }
 
     @Test
