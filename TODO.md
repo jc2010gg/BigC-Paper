@@ -128,7 +128,8 @@ Tideframe, no el dibujo ni los clics en un cliente. Ver [docs/tideframe.md](docs
 
 - [ ] Servidor de prueba con BigCasares, BetterModel y Vault con una economía; SIN Tideframe.jar externo.
   Confirmar el modulo integrado y las pantallas en `plugins/BigCasares/tideframe/engine/screens`.
-- [ ] Java con los dos packs aceptados: `/misiones` y `/shop` abren las pantallas de Tideframe, se leen enteras
+- [ ] Java con los dos packs aceptados: `/misiones` y un mercader (NPC; `/shop` está desactivado) abren las
+  pantallas de Tideframe, se leen enteras
   a la escala de GUI habitual y la X cierra. Sin el pack de Tideframe se abren los menús de inventario.
 - [ ] Tienda: un clic izquierdo compra una vez y uno derecho vende una vez (saldo e inventario antes y
   después), con inventario lleno, saldo insuficiente, objetos custom (PDC, tier, modelo, stack) y páginas.
@@ -153,15 +154,16 @@ Tideframe, no el dibujo ni los clics en un cliente. Ver [docs/tideframe.md](docs
   también en el menú de inventario clásico), una sola vez por operación.
 - [ ] `/bigcasares historial`: muestra tus últimas compras y ventas de cualquier menú, la más nueva primero.
 - [ ] Un producto o misión con nombre largo: se achica o termina en "…" sin pisar la columna de al lado.
-- [ ] `/shop` y `/misiones` dos veces seguidas con la pantalla abierta: los botones siguen funcionando.
+- [ ] Tocar el mercader o pedir `/misiones` dos veces seguidas con la pantalla abierta: los botones siguen funcionando.
 - [ ] `/tideframe reload` con una pantalla `bigc_*` abierta: no vuelve sola, el jugador ve el aviso y el
   comando la abre de nuevo. Lo mismo con `/tideframe open bigc_tienda`.
 - [ ] Tideframe con `pack.send: false`: el log lo avisa y se abren los menús de siempre.
 - [ ] Cambiar `tideframe/engine/config.yml` y recargar el motor: el estado real de `pack.send` y el UUID del pack
   deben decidir la elegibilidad; nunca aceptar solamente el pack de BigCasares como prueba del pack de UI.
-- [ ] Una pantalla editada con un comando `/shop` al cerrar: la tienda siguiente conserva sus filas y clics.
+- [ ] Tocar un mercader justo mientras se cierra otra pantalla de Tideframe: la tienda conserva sus filas y clics.
 - [ ] Planeando, con el gancho, en vehículo o en el aire: se abre el menú de inventario, no Tideframe.
-- [ ] Bedrock (Geyser/Floodgate): `/shop` y `/misiones` abren formularios, nunca la pantalla Java de Tideframe.
+- [ ] Bedrock (Geyser/Floodgate): el mercader y `/misiones` abren formularios, nunca la pantalla Java de Tideframe.
+  Después de comprar o vender, el formulario de la categoría vuelve a abrirse con el saldo nuevo.
 - [ ] Bedrock con el pack de BigCasares (versión 2.1.0) aceptado, en PC y en un teléfono: tienda y misiones se ven
   con el panel oscuro de borde dorado, título dorado, filas con íconos y la X; se leen enteras y la lista se
   desplaza. Comparar con capturas de las pantallas Java.

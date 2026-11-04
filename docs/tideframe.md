@@ -64,7 +64,8 @@ puede chocar con otros packs o con Iris/OptiFine.
 - `/misiones`: listas diarias/semanales. Reclamar cobra en la misma pantalla con el cobro de siempre del
   modulo (`MissionModule.claimAll`, que solo paga lo no cobrado) y redibuja la lista; el boton no tiene accion
   de Tideframe y el clic se cancela. Una pantalla editada que todavia tenga `close` en Reclamar no se cierra.
-- `/shop` y NPC: categorias, paginas, compra izquierda y venta derecha, siempre a traves de `ShopService`.
+- Tienda (desde un mercader NPC; el comando `/shop` esta desactivado en BigCasares y lo dice): categorias,
+  paginas, compra izquierda y venta derecha, siempre a traves de `ShopService`.
   El boton "Cant." alterna x1, x4 y x16 lotes: cada clic compra o vende esa cantidad como una sola operacion
   (un cobro o un pago, todo o nada) y las filas muestran el precio de esa cantidad. Cambiar la cantidad cuenta
   como filas nuevas para la espera anti doble clic. Si el saldo no alcanza para la cantidad elegida, la fila
