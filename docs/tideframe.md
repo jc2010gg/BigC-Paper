@@ -69,7 +69,9 @@ puede chocar con otros packs o con Iris/OptiFine.
   (un cobro o un pago, todo o nada) y las filas muestran el precio de esa cantidad. Cambiar la cantidad cuenta
   como filas nuevas para la espera anti doble clic. Si el saldo no alcanza para la cantidad elegida, la fila
   muestra "falta $X" en lugar del precio de compra. En Bedrock el primer boton del formulario de una categoria
-  es la misma cantidad, y una fila que no se puede pagar va en rojo con lo que falta.
+  es la misma cantidad y el segundo alterna "Modo: comprar" y "Modo: vender". Comprando, una fila que no se puede
+  pagar va en rojo con lo que falta; vendiendo, muestra el precio de venta, en rojo con cuántos lleva el jugador si
+  no alcanzan, o "no se compra acá" si el producto no tiene precio de venta.
   Shift + clic derecho (Java) vende todos los lotes enteros que el jugador lleva, hasta 64, en una sola
   operacion. Compras, ventas y cobros de misiones suenan (exito, rechazo, recompensa) solo para quien los hizo;
   el menu de inventario clasico no cambia.
@@ -108,7 +110,7 @@ el pack de Bedrock de BigCasares los dibuja con los colores de `bigc_tienda` y `
   dorado, o en rojo si no alcanza el saldo.
 - Misiones (antes, el cofre de inventario): pestañas Diarias/Semanales, cada misión con barra de progreso,
   estado y premio, y "Reclamar" cuando hay algo para cobrar. Reclamar cobra con el mismo cobro que Java y
-  vuelve a mostrar la lista. La cantidad de la tienda todavía es solo de Java. Las barras usan los caracteres `U+E500..U+E503` del pack; sin el pack se usan barras de texto.
+  vuelve a mostrar la lista. La tienda tiene cantidad y modo vender (ver "Uso y autoridad"). Las barras usan los caracteres `U+E500..U+E503` del pack; sin el pack se usan barras de texto.
 - El pack de Bedrock pasó a la versión 2.1.0 para que los clientes descarguen el nuevo. Cambiar el pack de
   Bedrock requiere reiniciar el servidor.
 - No verificado en un cliente Bedrock real: ver la lista de `TODO.md`.

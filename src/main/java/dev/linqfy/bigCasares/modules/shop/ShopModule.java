@@ -49,8 +49,14 @@ public final class ShopModule implements PluginModule {
     private final ShopFormGeneration formGeneration = new ShopFormGeneration();
     /** The id of the Bedrock form's quantity button; never a catalog entry id (those come from shop.yml keys). */
     static final String QUANTITY_BUTTON = "#cantidad";
+    /** The id of the Bedrock form's buy/sell switch. */
+    static final String MODE_BUTTON = "#modo";
+    /** Buttons before the products in a Bedrock category form (quantity and mode). */
+    static final int HEADER_BUTTONS = 2;
     /** Each Bedrock player's chosen quantity of lots per tap (1 when not set). */
     private final Map<UUID, Integer> bedrockLots = new java.util.concurrent.ConcurrentHashMap<>();
+    /** Bedrock players whose category forms sell instead of buying. */
+    private final java.util.Set<UUID> bedrockSelling = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private boolean enabled;
     private BukkitRuntimeRegistrations registrations;
     private RuntimeRegistrationScope compatibilityScope;
@@ -249,17 +255,20 @@ public final class ShopModule implements PluginModule {
         UUID playerId = player.getUniqueId();
         long generation = formGeneration.current();
         int lots = bedrockLots.getOrDefault(playerId, 1);
+        boolean selling = bedrockSelling.contains(playerId);
         double funds = economyGateway.balance(player);
-        List<ShopViewItem> items = bedrockCategoryItems(category, lots, funds, economyGateway::format);
-        ShopView view = new ShopView(category.id(), category.name(), "§7Tocá un objeto para comprarlo",
-            economyGateway.format(funds), items);
+        ShopService activeService = service;
+        List<ShopViewItem> items = bedrockCategoryItems(category, lots, selling, funds,
+            entry -> activeService == null ? 0 : activeService.owned(player, entry), economyGateway::format);
+        ShopView view = new ShopView(category.id(), category.name(),
+            selling ? "§7Tocá un objeto para venderlo" : "§7Tocá un objeto para comprarlo", economyGateway.format(funds), items);
         BukkitRuntimeRegistrations activeRegistrations = registrations;
         boolean sent = bedrockFormSender.send(playerId, view,
             index -> activeRegistrations.guard(
-                () -> handleBedrockPurchaseResponse(playerId, generation, category.id(), view, lots, index)).run());
+                () -> handleBedrockPurchaseResponse(playerId, generation, category.id(), view, lots, selling, index)).run());
         if (!sent) {
             new ChatFallbackShopUi(plugin.getServer()).openShop(player.getUniqueId(), new ShopView(view.id(), view.title(),
-                view.description(), view.balance(), items.subList(1, items.size())));
+                view.description(), view.balance(), items.subList(HEADER_BUTTONS, items.size())));
         }
     }
 
@@ -273,25 +282,42 @@ public final class ShopModule implements PluginModule {
     }
 
     /**
-     * The Bedrock category form's buttons: first the quantity a tap buys (as the Java screen's "Cant.", x1, x4, x16 in
-     * turn), then each product with the name and price of that quantity, red with what is missing when the balance
-     * does not cover it, and its vanilla Bedrock icon.
+     * The Bedrock category form's buttons: the quantity a tap moves (as the Java screen's "Cant.", x1, x4, x16 in turn)
+     * and whether it buys or sells, then each product with the name and price of that quantity and its vanilla Bedrock
+     * icon. Buying, a row the balance does not cover is red with what is missing; selling, a row the player does not
+     * carry enough of is red with how many they have, and one the shop does not buy back says so.
      */
-    static List<ShopViewItem> bedrockCategoryItems(ShopCategory category, int lots, double funds,
+    static List<ShopViewItem> bedrockCategoryItems(ShopCategory category, int lots, boolean selling, double funds,
+                                                   java.util.function.ToIntFunction<ShopEntry> owned,
                                                    java.util.function.DoubleFunction<String> money) {
         List<ShopViewItem> items = new ArrayList<>();
         items.add(new ShopViewItem(QUANTITY_BUTTON, "§bCantidad: x" + lots + " §7(tocá para cambiar)", "", "", null, true));
+        items.add(new ShopViewItem(MODE_BUTTON, selling ? "§6Modo: vender §7(tocá para comprar)" : "§aModo: comprar §7(tocá para vender)",
+            "", "", null, true));
         for (ShopEntry entry : category.entries()) {
-            double price = entry.buyPrice() * lots;
             int count = entry.amount() * lots;
             String name = entry.displayName() == null ? entry.id() : entry.displayName();
+            String price;
+            boolean available;
+            if (!selling) {
+                double cost = entry.buyPrice() * lots;
+                available = funds >= cost;
+                price = money.apply(cost) + (available ? "" : " (faltan " + money.apply(cost - funds) + ")");
+            } else if (entry.sellPrice() <= 0) {
+                available = false;
+                price = "no se compra acá";
+            } else {
+                int carried = owned.applyAsInt(entry);
+                available = carried >= count;
+                price = money.apply(entry.sellPrice() * lots) + (available ? "" : " (tenés " + carried + ")");
+            }
             items.add(new ShopViewItem(
                 entry.id(),
                 count > 1 ? name + " §7x" + count : name,
                 String.join("\n", entry.lore()),
-                money.apply(price) + (funds < price ? " (faltan " + money.apply(price - funds) + ")" : ""),
+                price,
                 null,
-                funds >= price,
+                available,
                 // A custom item has no vanilla icon on Bedrock: its row keeps the name and price only.
                 entry.customItemId() == null ? BedrockItemIcons.path(entry.material()).orElse(null) : null
             ));
@@ -300,17 +326,24 @@ public final class ShopModule implements PluginModule {
     }
 
     /**
-     * A tap on the Bedrock category form: the quantity button switches to the next quantity and shows the form again;
-     * a product row buys the quantity that form showed, as one operation.
+     * A tap on the Bedrock category form: the quantity and mode buttons switch and show the form again; a product row
+     * buys or sells the quantity that form showed, in the mode it showed, as one operation.
      */
     private void handleBedrockPurchaseResponse(UUID playerId, long generation, String categoryId, ShopView view, int lots,
-                                               int index) {
+                                               boolean selling, int index) {
         Player player = resolveActiveFormPlayer(playerId, generation);
         if (player == null || index < 0 || index >= view.items().size()) {
             return;
         }
-        if (QUANTITY_BUTTON.equals(view.items().get(index).id())) {
-            bedrockLots.put(playerId, ShopTideframeMenu.next(lots));
+        String id = view.items().get(index).id();
+        if (QUANTITY_BUTTON.equals(id) || MODE_BUTTON.equals(id)) {
+            if (QUANTITY_BUTTON.equals(id)) {
+                bedrockLots.put(playerId, ShopTideframeMenu.next(lots));
+            } else if (selling) {
+                bedrockSelling.remove(playerId);
+            } else {
+                bedrockSelling.add(playerId);
+            }
             catalog.category(categoryId).ifPresent(category -> openBedrockCategory(player, category));
             return;
         }
@@ -320,7 +353,8 @@ public final class ShopModule implements PluginModule {
             if (activeService == null) {
                 return;
             }
-            ShopTransactionResult result = withSound(player, activeService.buy(player, entry, lots));
+            ShopTransactionResult result = withSound(player, selling
+                ? activeService.sell(player, entry, lots) : activeService.buy(player, entry, lots));
             player.sendMessage((result.success() ? "§a" : "§c") + result.message());
         });
     }
@@ -435,6 +469,7 @@ public final class ShopModule implements PluginModule {
         enabled = false;
         formGeneration.invalidate();
         bedrockLots.clear();
+        bedrockSelling.clear();
         npcs.clear();
         guiController = null;
         npcListener = null;

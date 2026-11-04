@@ -142,7 +142,8 @@ Tideframe, no el dibujo ni los clics en un cliente. Ver [docs/tideframe.md](docs
   compra o vende todos los lotes con un solo movimiento de saldo, o ninguno si no alcanza el saldo o los ítems.
   Probar con inventario casi lleno (lo que no entra cae al piso) y con objetos custom.
 - [ ] Tienda con poco saldo: la fila dice "falta $X" (Java) o va en rojo con "(faltan $X)" (Bedrock), y tocarla
-  no cobra nada. En Bedrock, "Cantidad" alterna x1, x4 y x16 y una fila compra esa cantidad.
+  no cobra nada. En Bedrock, "Cantidad" alterna x1, x4 y x16 y una fila compra esa cantidad; "Modo: vender"
+  hace que tocar una fila venda esa cantidad (un solo pago) y muestra cuántos llevás si no alcanzan.
 - [ ] Completar una misión jugando: llega un solo aviso "¡Misión lista!" en el chat y, al abrir /misiones,
   esa misión está primera.
 - [ ] `/bigcasares tideframe` como operador: los números coinciden con los jugadores conectados y el pack;
