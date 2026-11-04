@@ -51,6 +51,7 @@ public final class MissionModule implements PluginModule {
     private RuntimeRegistrationScope compatibilityScope;
     private final Map<UUID, MissionPlayerState> stateCache = new LinkedHashMap<>();
     private final Set<UUID> dirtyPlayers = new LinkedHashSet<>();
+    private final MissionReadyNotices readyNotices = new MissionReadyNotices();
 
     public MissionModule(BigCasares plugin) {
         this.plugin = plugin;
@@ -298,6 +299,8 @@ public final class MissionModule implements PluginModule {
         }
 
         cacheUpdated(updated);
+        // Passive missions (hold, wear, stand on) complete only here.
+        announceReady(player, state, updated);
     }
 
     private MissionPlayerState revalidateAssignment(Player player, MissionPlayerState state, MissionScope scope, MissionAssignment assignment) {
@@ -347,9 +350,9 @@ public final class MissionModule implements PluginModule {
         announceReady(player, state, updated);
     }
 
-    /** Tells the player, once per mission, that it just became ready to claim (Java and Bedrock alike, in chat). */
+    /** Tells the player, once per mission and period, that it just became ready to claim (Java and Bedrock, in chat). */
     private void announceReady(Player player, MissionPlayerState before, MissionPlayerState after) {
-        for (MissionDefinition ready : MissionOrder.newlyReady(before, after)) {
+        for (MissionDefinition ready : readyNotices.toAnnounce(before, after)) {
             player.sendMessage("§a¡Misión lista! §f" + MissionTideframeMenu.plain(ready.title()) + " §7· /misiones para cobrarla");
         }
     }
@@ -369,6 +372,7 @@ public final class MissionModule implements PluginModule {
     }
 
     public void flush(UUID playerId) {
+        readyNotices.forget(playerId);
         MissionPlayerState state = stateCache.remove(playerId);
         if (state != null && dirtyPlayers.remove(playerId)) storage.save(state);
     }
@@ -494,6 +498,7 @@ public final class MissionModule implements PluginModule {
         if (storage != null) flushDirtyStates();
         stateCache.clear();
         dirtyPlayers.clear();
+        readyNotices.clear();
         enabled = false;
         bedrockGeneration++;
         hudController = null;
