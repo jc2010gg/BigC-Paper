@@ -48,6 +48,7 @@ public final class ShopModule implements PluginModule {
         () -> dev.linqfy.bigCasares.modules.tideframe.TideframeUi.NONE;
     private final ShopFormGeneration formGeneration = new ShopFormGeneration();
     private final ShopHistory history = new ShopHistory();
+    private final ShopFavorites favorites;
     /** The id of the Bedrock form's quantity button; never a catalog entry id (those come from shop.yml keys). */
     static final String QUANTITY_BUTTON = "#cantidad";
     /** The id of the Bedrock form's buy/sell switch. */
@@ -58,8 +59,8 @@ public final class ShopModule implements PluginModule {
     static final int HEADER_BUTTONS = 3;
     /** Each Bedrock player's chosen quantity of lots per tap (1 when not set). */
     private final Map<UUID, Integer> bedrockLots = new java.util.concurrent.ConcurrentHashMap<>();
-    /** Bedrock players whose category forms sell instead of buying. */
-    private final java.util.Set<UUID> bedrockSelling = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    /** Each Bedrock player's mode in category forms (buy when not set). */
+    private final Map<UUID, BedrockMode> bedrockModes = new java.util.concurrent.ConcurrentHashMap<>();
     private boolean enabled;
     private BukkitRuntimeRegistrations registrations;
     private RuntimeRegistrationScope compatibilityScope;
@@ -67,6 +68,7 @@ public final class ShopModule implements PluginModule {
 
     public ShopModule(BigCasares plugin) {
         this.plugin = plugin;
+        this.favorites = new ShopFavorites(dev.linqfy.bigCasares.platform.PlayerStrings.of(plugin));
     }
 
     @Override
@@ -154,6 +156,10 @@ public final class ShopModule implements PluginModule {
             @Override public String balance(Player player) { return ownedEconomy.format(ownedEconomy.balance(player)); }
             @Override public double funds(Player player) { return ownedEconomy.balance(player); }
             @Override public int owned(Player player, ShopEntry entry) { return ownedService.owned(player, entry); }
+            @Override public java.util.Optional<ShopCategory> favorites(Player player) { return favorites.category(player, ownedCatalog); }
+            @Override public boolean toggleFavorite(Player player, String categoryId, String entryId) {
+                return favorites.toggle(player, categoryId, entryId);
+            }
             @Override public String format(double amount) { return ownedEconomy.format(amount); }
         }, () -> tideframe.get());
         this.tideframeMenu = menu;
@@ -243,7 +249,7 @@ public final class ShopModule implements PluginModule {
             "§6§lTienda BigCasares",
             "§7Elegí una categoría",
             economyGateway.format(economyGateway.balance(player)),
-            bedrockCategoryButtons(catalog)
+            bedrockCategoryButtons(catalog, favorites.category(player, catalog))
         );
         BukkitRuntimeRegistrations activeRegistrations = registrations;
         boolean sent = bedrockFormSender.send(playerId, view,
@@ -258,17 +264,18 @@ public final class ShopModule implements PluginModule {
         UUID playerId = player.getUniqueId();
         long generation = formGeneration.current();
         int lots = bedrockLots.getOrDefault(playerId, 1);
-        boolean selling = bedrockSelling.contains(playerId);
+        BedrockMode mode = bedrockModes.getOrDefault(playerId, BedrockMode.BUY);
         double funds = economyGateway.balance(player);
         ShopService activeService = service;
-        List<ShopViewItem> items = bedrockCategoryItems(category, lots, selling, funds,
-            entry -> activeService == null ? 0 : activeService.owned(player, entry), economyGateway::format);
-        ShopView view = new ShopView(category.id(), category.name(),
-            selling ? "§7Tocá un objeto para venderlo" : "§7Tocá un objeto para comprarlo", economyGateway.format(funds), items);
+        java.util.Set<String> favoriteKeys = favorites.keys(player);
+        List<ShopViewItem> items = bedrockCategoryItems(category, lots, mode, funds,
+            entry -> activeService == null ? 0 : activeService.owned(player, entry), economyGateway::format,
+            entry -> favoriteKeys.contains(favoriteKey(category.id(), entry.id())));
+        ShopView view = new ShopView(category.id(), category.name(), mode.help, economyGateway.format(funds), items);
         BukkitRuntimeRegistrations activeRegistrations = registrations;
         boolean sent = bedrockFormSender.send(playerId, view,
             index -> activeRegistrations.guard(
-                () -> handleBedrockPurchaseResponse(playerId, generation, category.id(), view, lots, selling, index)).run());
+                () -> handleBedrockPurchaseResponse(playerId, generation, category.id(), view, lots, mode, index)).run());
         if (!sent) {
             new ChatFallbackShopUi(plugin.getServer()).openShop(player.getUniqueId(), new ShopView(view.id(), view.title(),
                 view.description(), view.balance(), items.subList(HEADER_BUTTONS, items.size())));
@@ -281,16 +288,51 @@ public final class ShopModule implements PluginModule {
             return;
         }
         String categoryId = view.items().get(index).id();
-        catalog.category(categoryId).ifPresent(category -> openBedrockCategory(player, category));
+        bedrockCategory(player, categoryId).ifPresent(category -> openBedrockCategory(player, category));
     }
 
-    /** The Bedrock categories form: each category with its icon and how many products it has, as the Java screen. */
-    static List<ShopViewItem> bedrockCategoryButtons(ShopCatalog catalog) {
-        return catalog.categories().stream()
+    /** A category by id, the player's favourites included. */
+    private java.util.Optional<ShopCategory> bedrockCategory(Player player, String categoryId) {
+        return ShopFavorites.CATEGORY.equals(categoryId) ? favorites.category(player, catalog) : catalog.category(categoryId);
+    }
+
+    /** The {@code category/entry} key of a row (a favourites row already is one). */
+    static String favoriteKey(String categoryId, String entryId) {
+        return ShopFavorites.CATEGORY.equals(categoryId) ? entryId : ShopFavorites.key(categoryId, entryId);
+    }
+
+    /**
+     * The Bedrock categories form: the player's favourites first while there is any, then each category with its
+     * icon and how many products it has, as the Java screen.
+     */
+    static List<ShopViewItem> bedrockCategoryButtons(ShopCatalog catalog, java.util.Optional<ShopCategory> favorites) {
+        List<ShopCategory> categories = new ArrayList<>();
+        favorites.ifPresent(categories::add);
+        categories.addAll(catalog.categories());
+        return categories.stream()
             .map(category -> new ShopViewItem(category.id(), category.name(), "",
                 category.entries().size() == 1 ? "1 producto" : category.entries().size() + " productos", null, true,
                 BedrockItemIcons.path(category.icon()).orElse(null)))
             .toList();
+    }
+
+    /** What a tap on a product does in the Bedrock category form; the mode button goes through them in order. */
+    enum BedrockMode {
+        BUY("§aModo: comprar §7(tocá para cambiar)", "§7Tocá un objeto para comprarlo"),
+        SELL("§6Modo: vender §7(tocá para cambiar)", "§7Tocá un objeto para venderlo"),
+        FAVORITE("§eModo: favoritos §7(tocá para cambiar)", "§7Tocá un objeto para agregarlo o quitarlo de tus favoritos");
+
+        final String label;
+        final String help;
+
+        BedrockMode(String label, String help) {
+            this.label = label;
+            this.help = help;
+        }
+
+        BedrockMode next() {
+            return values()[(ordinal() + 1) % values().length];
+        }
     }
 
     /**
@@ -299,20 +341,23 @@ public final class ShopModule implements PluginModule {
      * icon. Buying, a row the balance does not cover is red with what is missing; selling, a row the player does not
      * carry enough of is red with how many they have, and one the shop does not buy back says so.
      */
-    static List<ShopViewItem> bedrockCategoryItems(ShopCategory category, int lots, boolean selling, double funds,
+    static List<ShopViewItem> bedrockCategoryItems(ShopCategory category, int lots, BedrockMode mode, double funds,
                                                    java.util.function.ToIntFunction<ShopEntry> owned,
-                                                   java.util.function.DoubleFunction<String> money) {
+                                                   java.util.function.DoubleFunction<String> money,
+                                                   java.util.function.Predicate<ShopEntry> favorite) {
         List<ShopViewItem> items = new ArrayList<>();
         items.add(new ShopViewItem(BACK_BUTTON, "§7« Volver a las categorías", "", "", null, true));
         items.add(new ShopViewItem(QUANTITY_BUTTON, "§bCantidad: x" + lots + " §7(tocá para cambiar)", "", "", null, true));
-        items.add(new ShopViewItem(MODE_BUTTON, selling ? "§6Modo: vender §7(tocá para comprar)" : "§aModo: comprar §7(tocá para vender)",
-            "", "", null, true));
+        items.add(new ShopViewItem(MODE_BUTTON, mode.label, "", "", null, true));
         for (ShopEntry entry : category.entries()) {
             int count = entry.amount() * lots;
             String name = entry.displayName() == null ? entry.id() : entry.displayName();
             String price;
             boolean available;
-            if (!selling) {
+            if (mode == BedrockMode.FAVORITE) {
+                available = true;
+                price = favorite.test(entry) ? "★ en tus favoritos" : "☆ tocá para agregar";
+            } else if (mode == BedrockMode.BUY) {
                 double cost = entry.buyPrice() * lots;
                 available = funds >= cost;
                 price = money.apply(cost) + (available ? "" : " (faltan " + money.apply(cost - funds) + ")");
@@ -343,7 +388,7 @@ public final class ShopModule implements PluginModule {
      * buys or sells the quantity that form showed, in the mode it showed, as one operation.
      */
     private void handleBedrockPurchaseResponse(UUID playerId, long generation, String categoryId, ShopView view, int lots,
-                                               boolean selling, int index) {
+                                               BedrockMode mode, int index) {
         Player player = resolveActiveFormPlayer(playerId, generation);
         if (player == null || index < 0 || index >= view.items().size()) {
             return;
@@ -356,29 +401,39 @@ public final class ShopModule implements PluginModule {
         if (QUANTITY_BUTTON.equals(id) || MODE_BUTTON.equals(id)) {
             if (QUANTITY_BUTTON.equals(id)) {
                 bedrockLots.put(playerId, ShopTideframeMenu.next(lots));
-            } else if (selling) {
-                bedrockSelling.remove(playerId);
             } else {
-                bedrockSelling.add(playerId);
+                bedrockModes.put(playerId, mode.next());
             }
-            catalog.category(categoryId).ifPresent(category -> openBedrockCategory(player, category));
+            reopenBedrockCategory(player, categoryId);
             return;
         }
-        ShopPurchaseRequest request = new BedrockShopFormMapper().purchaseForButton(playerId, view, index);
-        catalog.entry(request.shopId(), request.entryId()).ifPresent(entry -> {
-            ShopService activeService = service;
-            if (activeService == null) {
-                return;
+        String key = favoriteKey(categoryId, id);
+        ShopFavorites.resolve(catalog, key).ifPresent(entry -> {
+            if (mode == BedrockMode.FAVORITE) {
+                boolean now = favorites.toggle(player, key.substring(0, key.indexOf('/')), key.substring(key.indexOf('/') + 1));
+                player.sendMessage(now ? "§e★ Agregado a tus favoritos." : "§7Quitado de tus favoritos.");
+            } else {
+                ShopService activeService = service;
+                if (activeService == null) {
+                    return;
+                }
+                ShopTransactionResult result = mode == BedrockMode.SELL
+                    ? activeService.sell(player, entry, lots) : activeService.buy(player, entry, lots);
+                player.sendMessage((result.success() ? "§a" : "§c") + result.message());
             }
-            ShopTransactionResult result = selling
-                ? activeService.sell(player, entry, lots) : activeService.buy(player, entry, lots);
-            player.sendMessage((result.success() ? "§a" : "§c") + result.message());
             // A Bedrock form closes on every tap: show the category again (new balance and stock), as the Java
             // screen stays open, so buying or selling more needs no trip back to the merchant.
-            if (player.isOnline()) {
-                catalog.category(categoryId).ifPresent(category -> openBedrockCategory(player, category));
-            }
+            reopenBedrockCategory(player, categoryId);
         });
+    }
+
+    /** The category form again; the categories when it no longer exists (favourites all removed). */
+    private void reopenBedrockCategory(Player player, String categoryId) {
+        if (!player.isOnline()) {
+            return;
+        }
+        bedrockCategory(player, categoryId).ifPresentOrElse(category -> openBedrockCategory(player, category),
+            () -> openBedrockCategories(player));
     }
 
     /** The player's last purchases and sales, from every menu (kept while the server runs). */
@@ -490,7 +545,7 @@ public final class ShopModule implements PluginModule {
         enabled = false;
         formGeneration.invalidate();
         bedrockLots.clear();
-        bedrockSelling.clear();
+        bedrockModes.clear();
         npcs.clear();
         guiController = null;
         npcListener = null;

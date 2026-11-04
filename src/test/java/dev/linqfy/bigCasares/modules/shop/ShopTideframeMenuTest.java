@@ -66,6 +66,20 @@ class ShopTideframeMenuTest {
             return owned;
         }
 
+        ShopFavorites favorites;
+        ShopCatalog catalog;
+
+        @Override
+        public java.util.Optional<ShopCategory> favorites(Player player) {
+            return favorites == null ? java.util.Optional.empty() : favorites.category(player, catalog);
+        }
+
+        @Override
+        public boolean toggleFavorite(Player player, String categoryId, String entryId) {
+            calls.add("fav " + categoryId + "/" + entryId);
+            return favorites.toggle(player, categoryId, entryId);
+        }
+
         @Override
         public String format(double amount) {
             return "$" + (int) amount;
@@ -248,8 +262,32 @@ class ShopTideframeMenuTest {
         service.owned = 32 * 200;
         ui.click(juan.player, SCREEN, "fila", 0, true, true);
         assertEquals("sell piedra x64", service.calls.getLast(), "never more lots than one operation allows");
+    }
+
+    @Test
+    void shiftLeftClickMarksFavouritesThatOpenAsTheFirstCategory() {
+        service.favorites = new ShopFavorites(new dev.linqfy.bigCasares.testsupport.MapPlayerStrings());
+        service.catalog = current.get();
+        menu.openCategory(juan.player, current.get().category("herramientas").orElseThrow(), () -> { });
+        look();
+        assertTrue(ui.click(juan.player, SCREEN, "fila", 1, false, true));
+        assertEquals(List.of("fav herramientas/gancho"), service.calls, "shift + left click buys nothing");
+        assertEquals("★ Gancho está en tus favoritos.", ui.variable(juan.player, "bigc_tienda_aviso"));
+
+        ui.click(juan.player, SCREEN, "volver", -1, false);
+        assertEquals(List.of("★ Favoritos", "Bloques", "Herramientas"), names(), "favourites first");
+        look();
+        ui.click(juan.player, SCREEN, "fila", 0, false);
+        assertEquals(List.of("Gancho"), names());
+        look();
+        ui.click(juan.player, SCREEN, "fila", 0, false);
+        assertEquals("buy gancho", service.calls.getLast(), "a favourite buys the catalog's own product");
+
         ui.click(juan.player, SCREEN, "fila", 0, false, true);
-        assertEquals("buy piedra", service.calls.getLast(), "shift with a left click still buys the chosen quantity");
+        assertEquals("fav herramientas/gancho", service.calls.getLast(), "and unmarks it from the favourites list too");
+        assertEquals("Ya no tenés favoritos: Shift + clic izquierdo en un producto lo agrega.",
+            ui.variable(juan.player, "bigc_tienda_aviso"));
+        assertEquals(List.of("Bloques", "Herramientas"), names(), "the empty favourites leave the categories");
     }
 
     @Test

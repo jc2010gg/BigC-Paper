@@ -153,6 +153,8 @@ Tideframe, no el dibujo ni los clics en un cliente. Ver [docs/tideframe.md](docs
 - [ ] Sonidos: compra o venta correcta, rechazo y cobro de misiones se oyen solo para quien los hizo (Java y Bedrock,
   también en el menú de inventario clásico), una sola vez por operación.
 - [ ] `/bigcasares historial`: muestra tus últimas compras y ventas de cualquier menú, la más nueva primero.
+- [ ] Favoritos: Shift + clic izquierdo (Java) y modo favoritos (Bedrock) marcan y desmarcan; "★ Favoritos" aparece
+  primera, compra el producto real y sobrevive a salir y reiniciar el servidor; vacía, desaparece.
 - [ ] Entrar con misiones listas sin cobrar: a los 3 segundos llega "Tenés N misiones para cobrar"; sin nada, no llega.
 - [ ] "Cambiar" en Diarias (Java) y "Cambiar las diarias" (Bedrock): el primer toque pregunta, el segundo cambia;
   no aparece con una diaria lista sin cobrar ni dos veces el mismo día; `/misiones reroll` también se niega.

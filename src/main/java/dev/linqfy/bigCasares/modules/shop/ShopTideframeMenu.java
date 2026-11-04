@@ -57,6 +57,12 @@ final class ShopTideframeMenu implements TideframeScreenHandler {
         /** Items of the entry the player carries, for "sell all". */
         int owned(Player player, ShopEntry entry);
 
+        /** The player's favourites as a category of the current catalog (see ShopFavorites), or empty. */
+        Optional<ShopCategory> favorites(Player player);
+
+        /** Marks or unmarks a favourite; true when it is one now. */
+        boolean toggleFavorite(Player player, String categoryId, String entryId);
+
         String format(double amount);
     }
 
@@ -169,16 +175,27 @@ final class ShopTideframeMenu implements TideframeScreenHandler {
         String id = view.rowIds().get(click.row());
         ShopCatalog current = catalog.get();
         if (view.categoryId() == null) {
-            if (current.category(id).isPresent()) {
+            if (ShopFavorites.CATEGORY.equals(id) || current.category(id).isPresent()) {
                 show(tideframe, player, id, 0, view.lots(), "");
             } else {
                 show(tideframe, player, null, 0, view.lots(), "Esa categoría ya no está.");
             }
             return;
         }
-        Optional<ShopEntry> entry = current.entry(view.categoryId(), id);
+        // A favourites row says where its product lives ("category/entry"); any other row belongs to its category.
+        boolean favorites = ShopFavorites.CATEGORY.equals(view.categoryId());
+        String key = favorites ? id : ShopFavorites.key(view.categoryId(), id);
+        Optional<ShopEntry> entry = favorites ? ShopFavorites.resolve(current, id) : current.entry(view.categoryId(), id);
         if (entry.isEmpty()) {
             show(tideframe, player, view.categoryId(), view.page(), view.lots(), "Ese producto ya no está.");
+            return;
+        }
+        if (!click.rightClick() && click.shiftClick()) {
+            // Shift + left click marks or unmarks a favourite; it buys nothing.
+            int slash = key.indexOf('/');
+            boolean now = actions.toggleFavorite(player, key.substring(0, slash), key.substring(slash + 1));
+            show(tideframe, player, view.categoryId(), view.page(), view.lots(),
+                (now ? "★ " + name(entry.get()) + " está en tus favoritos." : name(entry.get()) + " ya no está en tus favoritos."));
             return;
         }
         // One click, one operation (of the lots shown), by the same service and rules as the inventory menu.
@@ -224,16 +241,23 @@ final class ShopTideframeMenu implements TideframeScreenHandler {
     /** Sends the page's rows and texts, and remembers exactly what the player is shown. */
     private void show(TideframeUi tideframe, Player player, String categoryId, int page, int lots, String notice) {
         ShopCatalog current = catalog.get();
-        Optional<ShopCategory> category = categoryId == null ? Optional.empty() : current.category(categoryId);
+        Optional<ShopCategory> favorites = actions.favorites(player);
+        Optional<ShopCategory> category = categoryId == null ? Optional.empty()
+            : ShopFavorites.CATEGORY.equals(categoryId) ? favorites : current.category(categoryId);
         if (categoryId != null && category.isEmpty()) {
-            show(tideframe, player, null, 0, lots, "Esa categoría ya no está.");
+            show(tideframe, player, null, 0, lots, ShopFavorites.CATEGORY.equals(categoryId)
+                ? "Ya no tenés favoritos: Shift + clic izquierdo en un producto lo agrega." : "Esa categoría ya no está.");
             return;
         }
-        int total = category.map(c -> c.entries().size()).orElse(current.categories().size());
+        // The categories, with the player's favourites first while there is any.
+        List<ShopCategory> categories = new ArrayList<>();
+        favorites.ifPresent(categories::add);
+        categories.addAll(current.categories());
+        int total = category.map(c -> c.entries().size()).orElse(categories.size());
         int pages = Math.max(1, (total + ROWS - 1) / ROWS);
         int shown = Math.max(0, Math.min(page, pages - 1));
         List<Map<String, String>> rows = category.isPresent()
-            ? entryRows(category.get(), shown, lots, actions.funds(player)) : categoryRows(current, shown);
+            ? entryRows(category.get(), shown, lots, actions.funds(player)) : categoryRows(categories, shown);
         List<String> ids = rows.stream().map(row -> row.get("id")).toList();
         String shownCategory = category.map(ShopCategory::id).orElse(null);
         // The same rows and prices again (a purchase's notice) are already in front of the player: they do not wait
@@ -246,7 +270,7 @@ final class ShopTideframeMenu implements TideframeScreenHandler {
         tideframe.setList(player, LIST, rows);
         tideframe.setVariable(player, "bigc_tienda_titulo", category.map(c -> plain(c.name())).orElse("Categorías"));
         tideframe.setVariable(player, "bigc_tienda_ayuda", category.isPresent()
-            ? "Izq.: comprar · Der.: vender · Shift+Der.: vender todo" : "Tocá una para ver sus productos");
+            ? "Izq. comprar · Der. vender · Shift+Der. todo · Shift+Izq. ★" : "Tocá una para ver sus productos");
         tideframe.setVariable(player, "bigc_tienda_saldo", plain(actions.balance(player)));
         tideframe.setVariable(player, "bigc_tienda_pagina", pages > 1 ? (shown + 1) + " de " + pages : "");
         // The screen shows the arrows only with more than one page, and "Volver" only inside a category.
@@ -255,9 +279,8 @@ final class ShopTideframeMenu implements TideframeScreenHandler {
         tideframe.setVariable(player, "bigc_tienda_aviso", notice == null ? "" : plain(notice));
     }
 
-    private List<Map<String, String>> categoryRows(ShopCatalog current, int page) {
+    private List<Map<String, String>> categoryRows(List<ShopCategory> categories, int page) {
         List<Map<String, String>> rows = new ArrayList<>();
-        List<ShopCategory> categories = current.categories();
         for (int i = page * ROWS; i < Math.min(categories.size(), (page + 1) * ROWS); i++) {
             ShopCategory category = categories.get(i);
             Map<String, String> row = new LinkedHashMap<>();

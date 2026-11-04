@@ -16,8 +16,8 @@ class ShopBedrockCategoryItemsTest {
         new ShopEntry("nuke", 11, null, "nuke_shot", 1, 500.0, 0.0, "Nuke", List.of())));
 
     private static List<ShopViewItem> items(int lots, boolean selling, double funds, int breadCarried) {
-        return ShopModule.bedrockCategoryItems(FOOD, lots, selling, funds,
-            entry -> entry.id().equals("bread") ? breadCarried : 0, amount -> "$" + (int) amount);
+        return ShopModule.bedrockCategoryItems(FOOD, lots, selling ? ShopModule.BedrockMode.SELL : ShopModule.BedrockMode.BUY, funds,
+            entry -> entry.id().equals("bread") ? breadCarried : 0, amount -> "$" + (int) amount, entry -> false);
     }
 
     private static final int FIRST = ShopModule.HEADER_BUTTONS;
@@ -29,7 +29,7 @@ class ShopBedrockCategoryItemsTest {
             items.subList(0, FIRST).stream().map(ShopViewItem::id).toList());
         assertEquals("§7« Volver a las categorías", items.get(0).name());
         assertEquals("§bCantidad: x1 §7(tocá para cambiar)", items.get(1).name());
-        assertEquals("§aModo: comprar §7(tocá para vender)", items.get(2).name());
+        assertEquals("§aModo: comprar §7(tocá para cambiar)", items.get(2).name());
         assertEquals(List.of("bread", "nuke"), items.subList(FIRST, FIRST + 2).stream().map(ShopViewItem::id).toList());
         assertEquals("&6Pan §7x16", items.get(FIRST).name());
         assertEquals("$40", items.get(FIRST).price());
@@ -50,7 +50,7 @@ class ShopBedrockCategoryItemsTest {
     @Test
     void sellingShowsTheSalePriceAndWhatThePlayerCarries() {
         List<ShopViewItem> items = items(2, true, 0, 20);
-        assertEquals("§6Modo: vender §7(tocá para comprar)", items.get(2).name());
+        assertEquals("§6Modo: vender §7(tocá para cambiar)", items.get(2).name());
         assertEquals("$4 (tenés 20)", items.get(FIRST).price(), "two lots are 32 breads; 20 are not enough");
         assertFalse(items.get(FIRST).available());
         assertEquals("no se compra acá", items.get(FIRST + 1).price(), "the nuke has no sale price");
@@ -61,10 +61,27 @@ class ShopBedrockCategoryItemsTest {
     }
 
     @Test
+    void favouriteModeMarksEachProductAndFavouritesListFirst() {
+        List<ShopViewItem> items = ShopModule.bedrockCategoryItems(FOOD, 1, ShopModule.BedrockMode.FAVORITE, 0,
+            entry -> 0, amount -> "$", entry -> entry.id().equals("bread"));
+        assertEquals("§eModo: favoritos §7(tocá para cambiar)", items.get(2).name());
+        assertEquals(List.of("★ en tus favoritos", "☆ tocá para agregar"),
+            items.subList(FIRST, FIRST + 2).stream().map(ShopViewItem::price).toList());
+        assertEquals(ShopModule.BedrockMode.BUY, ShopModule.BedrockMode.FAVORITE.next(), "the mode button cycles back to buying");
+
+        ShopCategory favorites = new ShopCategory(ShopFavorites.CATEGORY, ShopFavorites.NAME, Material.NETHER_STAR, 0,
+            List.of(FOOD.entries().getFirst()));
+        List<ShopViewItem> buttons = ShopModule.bedrockCategoryButtons(new ShopCatalog(List.of(FOOD)), java.util.Optional.of(favorites));
+        assertEquals(List.of(ShopFavorites.CATEGORY, "food"), buttons.stream().map(ShopViewItem::id).toList());
+        assertEquals("food/bread", ShopModule.favoriteKey("food", "bread"));
+        assertEquals("food/bread", ShopModule.favoriteKey(ShopFavorites.CATEGORY, "food/bread"), "a favourites row already is a key");
+    }
+
+    @Test
     void categoriesShowHowManyProductsTheyHave() {
         ShopCatalog catalog = new ShopCatalog(List.of(FOOD,
             new ShopCategory("blocks", "Bloques", Material.STONE, 10, List.of(FOOD.entries().getFirst()))));
-        List<ShopViewItem> buttons = ShopModule.bedrockCategoryButtons(catalog);
+        List<ShopViewItem> buttons = ShopModule.bedrockCategoryButtons(catalog, java.util.Optional.empty());
         assertEquals(List.of("2 productos", "1 producto"), buttons.stream().map(ShopViewItem::price).toList());
         assertEquals("textures/blocks/stone", buttons.get(1).iconPath());
     }

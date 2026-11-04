@@ -82,6 +82,10 @@ puede chocar con otros packs o con Iris/OptiFine.
   mision queda lista, el jugador recibe un aviso en el chat una sola vez, con el premio. Las dos ediciones
   muestran cuanta plata pagaria Reclamar ("2 para cobrar · $650"). En Bedrock, despues de comprar o vender el
   formulario de la categoria vuelve a abrirse con el saldo nuevo, como la pantalla Java que sigue abierta.
+- Favoritos: Shift + clic izquierdo (Java) o el modo "favoritos" del formulario (Bedrock) marcan un producto. La
+  categoria "★ Favoritos" aparece primera mientras haya alguno. Se guardan con el jugador (PersistentDataContainer,
+  clave `bigcasares:shop_favorites_v1`, lineas `categoria/entrada`, hasta 54); los productos que el catalogo ya no
+  tiene se saltean pero no se borran.
 - Al entrar, si hay misiones para cobrar, el jugador recibe a los 3 segundos "Tenés N misiones para cobrar ($X)".
 - "Cambiar" (Java, pestaña Diarias) y "Cambiar las diarias" (Bedrock) reemplazan las diarias una vez por dia,
   con un segundo toque en menos de 3 segundos para confirmar. Nunca mientras haya una diaria lista sin cobrar:
