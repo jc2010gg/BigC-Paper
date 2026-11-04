@@ -46,6 +46,10 @@ public final class ShopModule implements PluginModule {
     private java.util.function.Supplier<dev.linqfy.bigCasares.modules.tideframe.TideframeUi> tideframeNavigation =
         () -> dev.linqfy.bigCasares.modules.tideframe.TideframeUi.NONE;
     private final ShopFormGeneration formGeneration = new ShopFormGeneration();
+    /** The id of the Bedrock form's quantity button; never a catalog entry id (those come from shop.yml keys). */
+    static final String QUANTITY_BUTTON = "#cantidad";
+    /** Each Bedrock player's chosen quantity of lots per tap (1 when not set). */
+    private final Map<UUID, Integer> bedrockLots = new java.util.concurrent.ConcurrentHashMap<>();
     private boolean enabled;
     private BukkitRuntimeRegistrations registrations;
     private RuntimeRegistrationScope compatibilityScope;
@@ -131,6 +135,7 @@ public final class ShopModule implements PluginModule {
             @Override public ShopTransactionResult buy(Player player, ShopEntry entry, int lots) { return ownedService.buy(player, entry, lots); }
             @Override public ShopTransactionResult sell(Player player, ShopEntry entry, int lots) { return ownedService.sell(player, entry, lots); }
             @Override public String balance(Player player) { return ownedEconomy.format(ownedEconomy.balance(player)); }
+            @Override public double funds(Player player) { return ownedEconomy.balance(player); }
             @Override public String format(double amount) { return ownedEconomy.format(amount); }
         }, () -> tideframe.get());
         this.tideframeMenu = menu;
@@ -237,28 +242,18 @@ public final class ShopModule implements PluginModule {
     private void openBedrockCategory(Player player, ShopCategory category) {
         UUID playerId = player.getUniqueId();
         long generation = formGeneration.current();
-        ShopView view = new ShopView(
-            category.id(),
-            category.name(),
-            "§7Tocá un objeto para comprarlo",
-            economyGateway.format(economyGateway.balance(player)),
-            category.entries().stream().map(entry -> new ShopViewItem(
-                entry.id(),
-                entry.displayName() == null ? entry.id() : entry.displayName(),
-                String.join("\n", entry.lore()),
-                economyGateway.format(entry.buyPrice()),
-                null,
-                economyGateway.has(player, entry.buyPrice()),
-                // A custom item has no vanilla icon on Bedrock: its row keeps the name and price only.
-                entry.customItemId() == null ? BedrockItemIcons.path(entry.material()).orElse(null) : null
-            )).toList()
-        );
+        int lots = bedrockLots.getOrDefault(playerId, 1);
+        double funds = economyGateway.balance(player);
+        List<ShopViewItem> items = bedrockCategoryItems(category, lots, funds, economyGateway::format);
+        ShopView view = new ShopView(category.id(), category.name(), "§7Tocá un objeto para comprarlo",
+            economyGateway.format(funds), items);
         BukkitRuntimeRegistrations activeRegistrations = registrations;
         boolean sent = bedrockFormSender.send(playerId, view,
             index -> activeRegistrations.guard(
-                () -> handleBedrockPurchaseResponse(playerId, generation, view, index)).run());
+                () -> handleBedrockPurchaseResponse(playerId, generation, category.id(), view, lots, index)).run());
         if (!sent) {
-            new ChatFallbackShopUi(plugin.getServer()).openShop(player.getUniqueId(), view);
+            new ChatFallbackShopUi(plugin.getServer()).openShop(player.getUniqueId(), new ShopView(view.id(), view.title(),
+                view.description(), view.balance(), items.subList(1, items.size())));
         }
     }
 
@@ -271,9 +266,46 @@ public final class ShopModule implements PluginModule {
         catalog.category(categoryId).ifPresent(category -> openBedrockCategory(player, category));
     }
 
-    private void handleBedrockPurchaseResponse(UUID playerId, long generation, ShopView view, int index) {
+    /**
+     * The Bedrock category form's buttons: first the quantity a tap buys (as the Java screen's "Cant.", x1, x4, x16 in
+     * turn), then each product with the name and price of that quantity, red with what is missing when the balance
+     * does not cover it, and its vanilla Bedrock icon.
+     */
+    static List<ShopViewItem> bedrockCategoryItems(ShopCategory category, int lots, double funds,
+                                                   java.util.function.DoubleFunction<String> money) {
+        List<ShopViewItem> items = new ArrayList<>();
+        items.add(new ShopViewItem(QUANTITY_BUTTON, "§bCantidad: x" + lots + " §7(tocá para cambiar)", "", "", null, true));
+        for (ShopEntry entry : category.entries()) {
+            double price = entry.buyPrice() * lots;
+            int count = entry.amount() * lots;
+            String name = entry.displayName() == null ? entry.id() : entry.displayName();
+            items.add(new ShopViewItem(
+                entry.id(),
+                count > 1 ? name + " §7x" + count : name,
+                String.join("\n", entry.lore()),
+                money.apply(price) + (funds < price ? " (faltan " + money.apply(price - funds) + ")" : ""),
+                null,
+                funds >= price,
+                // A custom item has no vanilla icon on Bedrock: its row keeps the name and price only.
+                entry.customItemId() == null ? BedrockItemIcons.path(entry.material()).orElse(null) : null
+            ));
+        }
+        return items;
+    }
+
+    /**
+     * A tap on the Bedrock category form: the quantity button switches to the next quantity and shows the form again;
+     * a product row buys the quantity that form showed, as one operation.
+     */
+    private void handleBedrockPurchaseResponse(UUID playerId, long generation, String categoryId, ShopView view, int lots,
+                                               int index) {
         Player player = resolveActiveFormPlayer(playerId, generation);
         if (player == null || index < 0 || index >= view.items().size()) {
+            return;
+        }
+        if (QUANTITY_BUTTON.equals(view.items().get(index).id())) {
+            bedrockLots.put(playerId, ShopTideframeMenu.next(lots));
+            catalog.category(categoryId).ifPresent(category -> openBedrockCategory(player, category));
             return;
         }
         ShopPurchaseRequest request = new BedrockShopFormMapper().purchaseForButton(playerId, view, index);
@@ -282,7 +314,7 @@ public final class ShopModule implements PluginModule {
             if (activeService == null) {
                 return;
             }
-            ShopTransactionResult result = activeService.buy(player, entry);
+            ShopTransactionResult result = activeService.buy(player, entry, lots);
             player.sendMessage((result.success() ? "§a" : "§c") + result.message());
         });
     }
@@ -390,6 +422,7 @@ public final class ShopModule implements PluginModule {
     private void clearRuntimeState() {
         enabled = false;
         formGeneration.invalidate();
+        bedrockLots.clear();
         npcs.clear();
         guiController = null;
         npcListener = null;

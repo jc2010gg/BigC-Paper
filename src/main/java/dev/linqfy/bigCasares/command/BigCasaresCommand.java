@@ -38,6 +38,7 @@ public final class BigCasaresCommand implements CommandExecutor, TabCompleter {
     private static final String TEAM_EDIT_PERMISSION = "bigcasares.team.edit";
     private static final String TEAM_APPEARANCE_PERMISSION = "bigcasares.team.appearance";
 
+    private static final String TIDEFRAME_STATUS_PERMISSION = "bigcasares.tideframe.status";
     private static final String DANGER_VIEW_PERMISSION = "bigcasares.danger.view";
     private static final String DANGER_VIEW_OTHERS_PERMISSION = "bigcasares.danger.view.others";
 
@@ -63,7 +64,7 @@ public final class BigCasaresCommand implements CommandExecutor, TabCompleter {
 
     public static List<String> rootSuggestions(String prefix) {
         String lowered = prefix.toLowerCase(Locale.ROOT);
-        return List.of("give", "misiones", "shop", "peligro", "nexus", "team", "boss", "tumba", "reload", "pack", "items", "baltop").stream()
+        return List.of("give", "misiones", "shop", "peligro", "nexus", "team", "boss", "tumba", "reload", "pack", "items", "baltop", "tideframe").stream()
             .filter(option -> option.startsWith(lowered))
             .collect(Collectors.toList());
     }
@@ -201,6 +202,15 @@ public final class BigCasaresCommand implements CommandExecutor, TabCompleter {
 
         if ("items".equalsIgnoreCase(args[0])) {
             return handleItems(sender, dropFirst(args));
+        }
+
+        if ("tideframe".equalsIgnoreCase(args[0])) {
+            if (!sender.hasPermission(TIDEFRAME_STATUS_PERMISSION)) {
+                sender.sendMessage(ChatColor.RED + "No tenes permiso para ver el estado de Tideframe.");
+                return true;
+            }
+            plugin.tideframeStatus().lines().forEach(sender::sendMessage);
+            return true;
         }
 
         if (isShop(args[0])) {

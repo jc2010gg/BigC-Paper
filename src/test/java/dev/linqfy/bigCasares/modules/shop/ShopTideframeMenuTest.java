@@ -47,9 +47,16 @@ class ShopTideframeMenuTest {
             return ShopTransactionResult.failure("No tenes suficientes items para vender.");
         }
 
+        double funds = 1000;
+
         @Override
         public String balance(Player player) {
             return "$1,000";
+        }
+
+        @Override
+        public double funds(Player player) {
+            return funds;
         }
 
         @Override
@@ -213,6 +220,16 @@ class ShopTideframeMenuTest {
         assertEquals("Cant. x16", ui.variable(juan.player, "bigc_tienda_cantidad"));
         ui.click(juan.player, SCREEN, "cantidad", -1, false);
         assertEquals("Cant. x1", ui.variable(juan.player, "bigc_tienda_cantidad"), "and back to one");
+    }
+
+    @Test
+    void aPurchaseTheBalanceDoesNotCoverShowsWhatIsMissing() {
+        service.funds = 200;
+        menu.openCategory(juan.player, current.get().category("herramientas").orElseThrow(), () -> { });
+        assertEquals("$120 / $30", ui.list(juan.player, LIST).get(0).get("precio"), "covered: its price");
+        assertEquals("falta $100 / —", ui.list(juan.player, LIST).get(1).get("precio"));
+        ui.click(juan.player, SCREEN, "cantidad", -1, false);
+        assertEquals("falta $280 / $120", ui.list(juan.player, LIST).get(0).get("precio"), "four lots of $120 against $200");
     }
 
     @Test

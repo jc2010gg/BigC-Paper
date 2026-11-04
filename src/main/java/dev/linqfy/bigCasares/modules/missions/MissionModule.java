@@ -344,6 +344,14 @@ public final class MissionModule implements PluginModule {
         updated = updateScope(player, updated, MissionScope.DAILY, missionType, mode, value, material, text, entityType);
         updated = updateScope(player, updated, MissionScope.WEEKLY, missionType, mode, value, material, text, entityType);
         cacheUpdated(updated);
+        announceReady(player, state, updated);
+    }
+
+    /** Tells the player, once per mission, that it just became ready to claim (Java and Bedrock alike, in chat). */
+    private void announceReady(Player player, MissionPlayerState before, MissionPlayerState after) {
+        for (MissionDefinition ready : MissionOrder.newlyReady(before, after)) {
+            player.sendMessage("§a¡Misión lista! §f" + MissionTideframeMenu.plain(ready.title()) + " §7· /misiones para cobrarla");
+        }
     }
 
     public void recordOutboundProgress(
@@ -357,6 +365,7 @@ public final class MissionModule implements PluginModule {
         MissionPlayerState updated = updateOutboundScope(state, MissionScope.DAILY, type, marker, metric, entityType);
         updated = updateOutboundScope(updated, MissionScope.WEEKLY, type, marker, metric, entityType);
         cacheUpdated(updated);
+        announceReady(player, state, updated);
     }
 
     public void flush(UUID playerId) {

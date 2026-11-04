@@ -5,6 +5,7 @@ import dev.linqfy.bigCasares.platform.ClientPlatformGateway;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -70,6 +71,29 @@ final class TideframeUiService implements TideframeUi, TideframeEventSink {
         this.mainThread = Objects.requireNonNull(mainThread, "mainThread");
         this.incompatible = Objects.requireNonNull(incompatible, "incompatible");
         this.clock = Objects.requireNonNull(clock, "clock");
+    }
+
+    /** The engine's state for an operator ({@link TideframeStatus}); {@code screens}: the BigCasares screens expected. */
+    TideframeStatus status(Collection<? extends Player> online, Collection<String> screens, boolean missions, boolean shop) {
+        int javaPlayers = 0, withPack = 0, bedrock = 0;
+        List<String> missing = new ArrayList<>();
+        try {
+            var loaded = bridge.screenIds();
+            for (String screen : screens) {
+                if (!loaded.contains(screen)) missing.add(screen);
+            }
+            for (Player player : online) {
+                if (platforms.resolvePlatform(player.getUniqueId()) != ClientPlatform.JAVA) {
+                    bedrock++;
+                } else {
+                    javaPlayers++;
+                    if (bridge.isPackLoaded(player)) withPack++;
+                }
+            }
+        } catch (LinkageError changed) {
+            incompatible(changed);
+        }
+        return new TideframeStatus(true, broken.get(), ownPack.getAsBoolean(), missions, shop, missing, javaPlayers, withPack, bedrock);
     }
 
     @Override

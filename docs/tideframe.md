@@ -67,7 +67,15 @@ puede chocar con otros packs o con Iris/OptiFine.
 - `/shop` y NPC: categorias, paginas, compra izquierda y venta derecha, siempre a traves de `ShopService`.
   El boton "Cant." alterna x1, x4 y x16 lotes: cada clic compra o vende esa cantidad como una sola operacion
   (un cobro o un pago, todo o nada) y las filas muestran el precio de esa cantidad. Cambiar la cantidad cuenta
-  como filas nuevas para la espera anti doble clic.
+  como filas nuevas para la espera anti doble clic. Si el saldo no alcanza para la cantidad elegida, la fila
+  muestra "falta $X" en lugar del precio de compra. En Bedrock el primer boton del formulario de una categoria
+  es la misma cantidad, y una fila que no se puede pagar va en rojo con lo que falta.
+- Misiones: las listas para cobrar van primero (Java y Bedrock), asi nunca quedan entre las ocultas. Cuando una
+  mision queda lista, el jugador recibe un aviso en el chat una sola vez.
+- Textos largos: el motor ya achica las lineas que no entran en su columna y, si igual no entran, las corta
+  con "…" (`TextFit`, pantallas de esquema 9 que no usan la calidad "legacy", como `bigc_*`).
+- `/bigcasares tideframe` (permiso `bigcasares.tideframe.status`, op): si el motor corre, si envia su pack,
+  que pantallas `bigc_*` faltan y cuantos jugadores Java tienen el pack (y cuantos Bedrock usan formularios).
 - El resto de menus de BigCasares no se convierte automaticamente: incluir todo el motor no equivale a redisenar
   todas las pantallas del plugin.
 - Java usa Tideframe cuando la pantalla y su pack estan listos. Bedrock conserva los formularios existentes;

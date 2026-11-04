@@ -49,6 +49,9 @@ final class ShopTideframeMenu implements TideframeScreenHandler {
 
         String balance(Player player);
 
+        /** The player's balance as a number, to show how much a row is short of. */
+        double funds(Player player);
+
         String format(double amount);
     }
 
@@ -216,7 +219,8 @@ final class ShopTideframeMenu implements TideframeScreenHandler {
         int total = category.map(c -> c.entries().size()).orElse(current.categories().size());
         int pages = Math.max(1, (total + ROWS - 1) / ROWS);
         int shown = Math.max(0, Math.min(page, pages - 1));
-        List<Map<String, String>> rows = category.isPresent() ? entryRows(category.get(), shown, lots) : categoryRows(current, shown);
+        List<Map<String, String>> rows = category.isPresent()
+            ? entryRows(category.get(), shown, lots, actions.funds(player)) : categoryRows(current, shown);
         List<String> ids = rows.stream().map(row -> row.get("id")).toList();
         String shownCategory = category.map(ShopCategory::id).orElse(null);
         // The same rows and prices again (a purchase's notice) are already in front of the player: they do not wait
@@ -253,7 +257,7 @@ final class ShopTideframeMenu implements TideframeScreenHandler {
         return rows;
     }
 
-    private List<Map<String, String>> entryRows(ShopCategory category, int page, int lots) {
+    private List<Map<String, String>> entryRows(ShopCategory category, int page, int lots, double funds) {
         List<Map<String, String>> rows = new ArrayList<>();
         List<ShopEntry> entries = category.entries();
         for (int i = page * ROWS; i < Math.min(entries.size(), (page + 1) * ROWS); i++) {
@@ -262,9 +266,11 @@ final class ShopTideframeMenu implements TideframeScreenHandler {
             row.put("id", entry.id());
             int items = entry.amount() * lots;
             row.put("nombre", items > 1 ? name(entry) + " x" + items : name(entry));
-            // Buy / sell of the quantity chosen, as the inventory menu's lore; "—" when it cannot be sold.
-            row.put("precio", plain(actions.format(entry.buyPrice() * lots)) + " / "
-                + (entry.sellPrice() > 0 ? plain(actions.format(entry.sellPrice() * lots)) : "—"));
+            // Buy / sell of the quantity chosen, as the inventory menu's lore; "—" when it cannot be sold. A purchase
+            // the balance does not cover shows what is missing instead of its price.
+            double price = entry.buyPrice() * lots;
+            String buy = funds < price ? "falta " + plain(actions.format(price - funds)) : plain(actions.format(price));
+            row.put("precio", buy + " / " + (entry.sellPrice() > 0 ? plain(actions.format(entry.sellPrice() * lots)) : "—"));
             rows.add(row);
         }
         return rows;

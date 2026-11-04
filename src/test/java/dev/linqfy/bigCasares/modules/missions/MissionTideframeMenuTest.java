@@ -69,9 +69,10 @@ class MissionTideframeMenuTest {
     @Test
     void showsEachMissionsProgressStatusAndRewardFromThePlayersState() {
         assertTrue(menu.open(juan.player, MissionScope.DAILY, () -> { }));
-        assertEquals(List.of("Picar 64 de piedra", "Matar 10 zombis", "Pescar 5 peces"), column(juan.player, "titulo"), "no colour codes");
-        assertEquals(List.of("23/64", "¡Lista!", "Cobrada"), column(juan.player, "progreso"));
-        assertEquals(List.of("$250", "$400", "$150"), column(juan.player, "premio"));
+        assertEquals(List.of("Matar 10 zombis", "Picar 64 de piedra", "Pescar 5 peces"), column(juan.player, "titulo"),
+            "no colour codes; ready to claim first, then running, then claimed");
+        assertEquals(List.of("¡Lista!", "23/64", "Cobrada"), column(juan.player, "progreso"));
+        assertEquals(List.of("$400", "$250", "$150"), column(juan.player, "premio"));
         assertEquals("Diarias", ui.variable(juan.player, "bigc_titulo"));
         assertTrue(ui.variable(juan.player, "bigc_reinicio").startsWith("se renuevan en 4h") || ui.variable(juan.player, "bigc_reinicio").startsWith("se renuevan en 5h"));
         assertEquals("1 para cobrar", ui.variable(juan.player, "bigc_pendientes"));

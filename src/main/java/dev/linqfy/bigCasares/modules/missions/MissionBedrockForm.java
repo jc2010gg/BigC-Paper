@@ -55,7 +55,7 @@ final class MissionBedrockForm {
         List<Button> buttons = new ArrayList<>();
         buttons.add(new Button(daily ? "§e» Diarias «" : "§7Diarias", Kind.DAILY));
         buttons.add(new Button(daily ? "§7Semanales" : "§e» Semanales «", Kind.WEEKLY));
-        for (MissionAssignment assignment : assignments) {
+        for (MissionAssignment assignment : MissionOrder.readyFirst(assignments)) {
             MissionDefinition definition = assignment.definition();
             MissionProgressSnapshot snapshot = assignment.snapshot();
             String status = snapshot.claimed() ? "§8Cobrada"

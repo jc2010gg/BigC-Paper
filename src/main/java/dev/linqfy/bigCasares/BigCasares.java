@@ -439,6 +439,12 @@ public final class BigCasares extends JavaPlugin {
         }
     }
 
+    /** The embedded Tideframe engine's state, for operators; off while the module is not running. */
+    public dev.linqfy.bigCasares.modules.tideframe.TideframeStatus tideframeStatus() {
+        TideframeUiModule module = tideframeUiModule;
+        return module == null ? dev.linqfy.bigCasares.modules.tideframe.TideframeStatus.off() : module.status();
+    }
+
     public ClientPlatform resolvePlayerPlatform(UUID playerId) {
         return resolveClientPlatform(playerId);
     }

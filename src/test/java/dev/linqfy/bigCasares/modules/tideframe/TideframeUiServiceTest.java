@@ -70,6 +70,21 @@ class TideframeUiServiceTest {
     }
 
     @Test
+    void theStatusCountsWhoCanSeeTheScreensAndNamesTheMissingOnes() {
+        FakePlayer ana = new FakePlayer("ana");
+        FakePlayer pepe = new FakePlayer("pepe");
+        platforms.put(pepe.id, ClientPlatform.BEDROCK);
+        TideframeStatus status = ui.status(List.of(juan.player, ana.player, pepe.player),
+            List.of("bigc_misiones", "bigc_tienda"), true, false);
+        assertEquals(new TideframeStatus(true, false, true, true, false, List.of("bigc_misiones"), 2, 2, 1), status);
+
+        bridge.packLoaded = false;
+        ownPack = false;
+        assertEquals(0, ui.status(List.of(juan.player), List.of(), true, true).javaWithPack());
+        assertFalse(ui.status(List.of(), List.of(), true, true).ownPack());
+    }
+
+    @Test
     void aScreenShowsOnlyToAJavaPlayerWithTideframesPackAndBothFeetDown() {
         assertTrue(ui.canShow(juan.player, "bigc_tienda"));
         assertFalse(ui.canShow(juan.player, "bigc_misiones"), "Tideframe does not have that screen (yet)");

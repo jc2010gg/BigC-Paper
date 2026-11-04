@@ -88,6 +88,13 @@ public final class TideframeUiModule implements PluginModule {
     public TideframeUi shop() { return shop ? ui : TideframeUi.NONE; }
     public TideframeUi navigation() { return ui; }
 
+    /** For {@code /bigcasares tideframe}: the engine's state and how many online players can see its screens. */
+    public TideframeStatus status() {
+        TideframeUiService running = service;
+        return running == null ? TideframeStatus.off()
+            : running.status(plugin.getServer().getOnlinePlayers(), SCREENS, missions, shop);
+    }
+
     private void stopRuntime() {
         ui = TideframeUi.NONE;
         service = null;

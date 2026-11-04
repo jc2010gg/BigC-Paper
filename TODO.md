@@ -141,6 +141,12 @@ Tideframe, no el dibujo ni los clics en un cliente. Ver [docs/tideframe.md](docs
 - [ ] Tienda: "Cant." pasa por x1, x4 y x16; las filas muestran nombre y precio de esa cantidad; un clic
   compra o vende todos los lotes con un solo movimiento de saldo, o ninguno si no alcanza el saldo o los ítems.
   Probar con inventario casi lleno (lo que no entra cae al piso) y con objetos custom.
+- [ ] Tienda con poco saldo: la fila dice "falta $X" (Java) o va en rojo con "(faltan $X)" (Bedrock), y tocarla
+  no cobra nada. En Bedrock, "Cantidad" alterna x1, x4 y x16 y una fila compra esa cantidad.
+- [ ] Completar una misión jugando: llega un solo aviso "¡Misión lista!" en el chat y, al abrir /misiones,
+  esa misión está primera.
+- [ ] `/bigcasares tideframe` como operador: los números coinciden con los jugadores conectados y el pack.
+- [ ] Un producto o misión con nombre largo: se achica o termina en "…" sin pisar la columna de al lado.
 - [ ] `/shop` y `/misiones` dos veces seguidas con la pantalla abierta: los botones siguen funcionando.
 - [ ] `/tideframe reload` con una pantalla `bigc_*` abierta: no vuelve sola, el jugador ve el aviso y el
   comando la abre de nuevo. Lo mismo con `/tideframe open bigc_tienda`.

@@ -49,10 +49,11 @@ class MissionBedrockFormTest {
             page.buttons().stream().map(MissionBedrockForm.Button::kind).toList());
         assertEquals("§e» Diarias «", page.texts().get(0));
         assertEquals("§7Semanales", page.texts().get(1));
-        assertTrue(page.texts().get(2).startsWith("§fPicar 64 de piedra\n"), page.texts().get(2));
-        assertTrue(page.texts().get(2).endsWith("§b16/64 §a$250"), page.texts().get(2));
-        assertTrue(page.texts().get(3).contains("§a¡Lista!"));
-        assertTrue(page.texts().get(4).contains("§8Cobrada"));
+        assertTrue(page.texts().get(2).startsWith("§fMatar 10 zombis\n"), "ready to claim first: " + page.texts().get(2));
+        assertTrue(page.texts().get(2).contains("§a¡Lista!"));
+        assertTrue(page.texts().get(3).startsWith("§fPicar 64 de piedra\n"), page.texts().get(3));
+        assertTrue(page.texts().get(3).endsWith("§b16/64 §a$250"), page.texts().get(3));
+        assertTrue(page.texts().get(4).contains("§8Cobrada"), "claimed last");
         assertEquals("§e§lReclamar §r§e(1)", page.texts().get(5));
         assertEquals("§7Se renuevan en 3h 5m\n§e1 para cobrar", page.content());
     }

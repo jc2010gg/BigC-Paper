@@ -137,10 +137,10 @@ final class MissionTideframeMenu implements TideframeScreenHandler {
         tideframe.setVariable(player, "bigc_vacio", rows.isEmpty() ? "No hay misiones activas" : "");
     }
 
-    /** The list rows: at most {@link #ROWS}, in the order the inventory menu shows them. */
+    /** The list rows: at most {@link #ROWS}, ready to claim first (so they are never the hidden ones), then the rest. */
     static List<Map<String, String>> rows(Collection<MissionAssignment> assignments, DoubleFunction<String> money) {
         List<Map<String, String>> rows = new ArrayList<>();
-        for (MissionAssignment assignment : assignments) {
+        for (MissionAssignment assignment : MissionOrder.readyFirst(assignments)) {
             if (rows.size() == ROWS) {
                 break;
             }

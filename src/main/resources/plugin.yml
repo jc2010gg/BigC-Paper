@@ -149,6 +149,7 @@ permissions:
       bigcasares.pack.reload: true
       bigcasares.pack.info: true
       bigcasares.pack.send: true
+      bigcasares.tideframe.status: true
       bigcasares.items.reload: true
       bigcasares.items.info: true
       bigcasares.skillrating.view: true
@@ -241,6 +242,10 @@ permissions:
 
   bigcasares.pack.send:
     description: Send the active BigCasares resource pack to Java players
+    default: op
+
+  bigcasares.tideframe.status:
+    description: View the embedded Tideframe engine state (pack, screens, players who can see them)
     default: op
 
   bigcasares.items.reload:
