@@ -17,7 +17,7 @@ class ShopBedrockCategoryItemsTest {
 
     private static List<ShopViewItem> items(int lots, boolean selling, double funds, int breadCarried) {
         return ShopModule.bedrockCategoryItems(FOOD, lots, selling ? ShopModule.BedrockMode.SELL : ShopModule.BedrockMode.BUY, funds,
-            entry -> entry.id().equals("bread") ? breadCarried : 0, amount -> "$" + (int) amount, entry -> false);
+            entry -> entry.id().equals("bread") ? breadCarried : 0, amount -> "$" + (int) amount, entry -> false, ShopEntry::buyPrice, entry -> "");
     }
 
     private static final int FIRST = ShopModule.HEADER_BUTTONS;
@@ -63,7 +63,7 @@ class ShopBedrockCategoryItemsTest {
     @Test
     void favouriteModeMarksEachProductAndFavouritesListFirst() {
         List<ShopViewItem> items = ShopModule.bedrockCategoryItems(FOOD, 1, ShopModule.BedrockMode.FAVORITE, 0,
-            entry -> 0, amount -> "$", entry -> entry.id().equals("bread"));
+            entry -> 0, amount -> "$", entry -> entry.id().equals("bread"), ShopEntry::buyPrice, entry -> "");
         assertEquals("§eModo: favoritos §7(tocá para cambiar)", items.get(2).name());
         assertEquals(List.of("★ en tus favoritos", "☆ tocá para agregar"),
             items.subList(FIRST, FIRST + 2).stream().map(ShopViewItem::price).toList());

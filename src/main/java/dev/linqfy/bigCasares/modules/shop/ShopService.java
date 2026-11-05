@@ -13,6 +13,8 @@ public final class ShopService {
     private final ShopEconomyGateway economy;
     private final ToIntFunction<Player> postGrantEnforcer;
     private final BiConsumer<Player, ShopTransactionResult> observer;
+    private final ShopPricing pricing;
+    private final ShopDailyLimits limits;
 
     public ShopService(ShopItemResolver resolver, ShopEconomyGateway economy) {
         this(resolver, economy, player -> 0);
@@ -28,10 +30,33 @@ public final class ShopService {
      */
     public ShopService(ShopItemResolver resolver, ShopEconomyGateway economy, ToIntFunction<Player> postGrantEnforcer,
                        BiConsumer<Player, ShopTransactionResult> observer) {
+        this(resolver, economy, postGrantEnforcer, observer, ShopPricing.NONE, ShopDailyLimits.NONE);
+    }
+
+    /** {@code pricing}: the purchase price now (offers, happy hour); {@code limits}: lots per player and day. */
+    ShopService(ShopItemResolver resolver, ShopEconomyGateway economy, ToIntFunction<Player> postGrantEnforcer,
+                BiConsumer<Player, ShopTransactionResult> observer, ShopPricing pricing, ShopDailyLimits limits) {
         this.resolver = resolver;
         this.economy = economy;
         this.postGrantEnforcer = postGrantEnforcer;
         this.observer = observer;
+        this.pricing = pricing;
+        this.limits = limits;
+    }
+
+    /** The purchase price of one lot now: what every menu shows and the shop charges. */
+    public double buyPrice(ShopEntry entry) {
+        return pricing.buyPrice(entry);
+    }
+
+    /** "OFERTA -20%" / "HORA FELIZ -10%" while the entry is discounted, else "". */
+    public String priceTag(ShopEntry entry) {
+        return pricing.tag(entry);
+    }
+
+    /** Lots the player may still buy today ({@link Integer#MAX_VALUE} without a daily limit). */
+    public int remainingToday(Player player, ShopEntry entry) {
+        return limits.remaining(player, entry);
     }
 
     public ShopTransactionResult buy(ShopEntry entry) {
@@ -76,7 +101,13 @@ public final class ShopService {
     }
 
     private ShopTransactionResult buyLots(Player player, ShopEntry entry, int lots) {
-        double price = entry.buyPrice() * lots;
+        int remaining = limits.remaining(player, entry);
+        if (lots > remaining) {
+            return ShopTransactionResult.failure(remaining == 0
+                ? "Llegaste al límite diario de este producto. Mañana se renueva."
+                : "Hoy podés comprar " + remaining + (remaining == 1 ? " lote más" : " lotes más") + " de este producto.");
+        }
+        double price = Math.round(pricing.buyPrice(entry) * lots * 100) / 100.0;
         if (!economy.has(player, price)) {
             return ShopTransactionResult.failure("Saldo insuficiente.");
         }
@@ -93,6 +124,7 @@ public final class ShopService {
             var leftovers = player.getInventory().addItem(stack);
             leftovers.values().forEach(leftover -> player.getWorld().dropItemNaturally(player.getLocation(), leftover));
         }
+        limits.bought(player, entry, lots);
         int overflowRemoved = postGrantEnforcer.applyAsInt(player);
         return ShopTransactionResult.success("Compraste " + entry.id() + times(lots) + " por " + economy.format(price) + ".", purchased, overflowRemoved);
     }

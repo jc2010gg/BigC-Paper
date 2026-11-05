@@ -89,6 +89,16 @@ puede chocar con otros packs o con Iris/OptiFine.
 - Misiones guardan con el jugador cuanto cobro en la semana (`bigcasares:missions_week_v1`, se reinicia con la
   semana) y su racha de dias con todas las diarias cobradas (`bigcasares:missions_streak_v1`, se corta si pasa un
   dia). Se ven junto al reinicio: la racha en Diarias y "esta semana $X" en Semanales, en Java y Bedrock.
+- Economia y eventos, todo apagado por defecto:
+  - Ofertas del dia (`ofertas` en shop.yml: cantidad hasta 10, descuento hasta 0.5): los mismos productos para
+    todos, elegidos con la fecha; solo baja el precio de compra.
+  - `limite-diario: N` en un producto de shop.yml: lotes por jugador y dia, contados con el jugador
+    (`bigcasares:shop_daily_v1`); una compra que lo pasa no cobra nada.
+  - Hora feliz (`eventos.hora-feliz` en config.yml): dias y horario; misiones pagan x`premio-misiones` (1 a 5)
+    y la tienda baja `descuento-tienda` (hasta 0.5). Avisa en el chat al empezar y terminar.
+  - Bono por racha (`mission-system.racha`): `bono-por-dia` por dia de racha hasta `maximo`.
+  - Ofertas y hora feliz no se suman: gana el descuento mayor. Los bonos de mision se suman con tope de +400%.
+    Los tres menus muestran el precio que se cobra (`ShopService.buyPrice`) y la etiqueta OFERTA o HORA FELIZ.
 - Al entrar, si hay misiones para cobrar, el jugador recibe a los 3 segundos "Tenés N misiones para cobrar ($X)".
 - "Cambiar" (Java, pestaña Diarias) y "Cambiar las diarias" (Bedrock) reemplazan las diarias una vez por dia,
   con un segundo toque en menos de 3 segundos para confirmar. Nunca mientras haya una diaria lista sin cobrar:

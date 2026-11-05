@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Buying or selling several lots with one click is one operation: one charge or payment, never part of it. */
 class ShopServiceLotsTest {
+    private static final java.util.UUID PLAYER_ID = java.util.UUID.randomUUID();
     private static final ShopEntry STONE = new ShopEntry("stone", 10, Material.STONE, null, 32, 64.0, 4.0, null, List.of());
 
     private final List<ItemStack> given = new ArrayList<>();
@@ -83,6 +84,30 @@ class ShopServiceLotsTest {
     }
 
     @Test
+    void chargesThePricingPriceAndRefusesPastTheDailyLimitWithoutCharging() {
+        ShopEntry limited = new ShopEntry("stone", 10, Material.STONE, null, 32, 64.0, 4.0, null, List.of(), 3);
+        ShopCatalog catalog = new ShopCatalog(List.of(new ShopCategory("blocks", "B", Material.STONE, 0, List.of(limited))));
+        java.time.ZonedDateTime saturday = java.time.ZonedDateTime.parse("2026-11-07T21:00:00Z");
+        var happy = new dev.linqfy.bigCasares.platform.HappyHour(true, java.util.Set.of(java.time.DayOfWeek.SATURDAY),
+            java.time.LocalTime.of(20, 0), java.time.LocalTime.of(22, 0), 2, 0.25);
+        ShopService priced = new ShopService(new ShopItemResolver(new CustomItemRegistry()), economy, ignored -> 0,
+            (who, result) -> { }, new ShopPricing(catalog, ShopPricing.Offers.OFF, happy, () -> saturday),
+            new ShopDailyLimits(new dev.linqfy.bigCasares.testsupport.MapPlayerStrings(), saturday::toLocalDate, catalog::keyOf));
+
+        assertEquals("Compraste stone x2 por $96.", priced.buy(player, limited, 2).message(), "two lots at 64 less 25%");
+        assertEquals(1000.0 - 96.0, economy.balance);
+        ShopTransactionResult tooMany = priced.buy(player, limited, 2);
+        assertFalse(tooMany.success());
+        assertEquals("Hoy podés comprar 1 lote más de este producto.", tooMany.message());
+        assertEquals(1000.0 - 96.0, economy.balance, "nothing charged");
+        assertTrue(priced.buy(player, limited, 1).success());
+        assertEquals("Llegaste al límite diario de este producto. Mañana se renueva.", priced.buy(player, limited, 1).message());
+        storage[0] = new ItemStack(Material.STONE, 64);
+        assertTrue(priced.sell(player, limited, 2).success(), "sales are never limited");
+        assertEquals(1000.0 - 96.0 - 48.0 + 8.0, economy.balance, "and keep their catalog price in the happy hour");
+    }
+
+    @Test
     void ownedCountsOnlyMatchingItems() {
         storage[0] = new ItemStack(Material.STONE, 64);
         storage[3] = new ItemStack(Material.DIRT, 64);
@@ -114,6 +139,7 @@ class ShopServiceLotsTest {
         return (Player) Proxy.newProxyInstance(Player.class.getClassLoader(), new Class<?>[]{Player.class},
             (proxy, method, args) -> switch (method.getName()) {
                 case "getInventory" -> inventory;
+                case "getUniqueId" -> PLAYER_ID;
                 case "hashCode" -> System.identityHashCode(proxy);
                 case "equals" -> proxy == args[0];
                 default -> throw new AssertionError("Unexpected player call: " + method.getName());

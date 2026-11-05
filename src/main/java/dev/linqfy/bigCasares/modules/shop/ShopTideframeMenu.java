@@ -63,6 +63,16 @@ final class ShopTideframeMenu implements TideframeScreenHandler {
         /** Marks or unmarks a favourite; true when it is one now. */
         boolean toggleFavorite(Player player, String categoryId, String entryId);
 
+        /** The purchase price of one lot now (offers, happy hour): what the screen shows and the shop charges. */
+        default double buyPrice(ShopEntry entry) {
+            return entry.buyPrice();
+        }
+
+        /** "OFERTA -20%" while the entry is discounted, else "". */
+        default String priceTag(ShopEntry entry) {
+            return "";
+        }
+
         String format(double amount);
     }
 
@@ -213,7 +223,7 @@ final class ShopTideframeMenu implements TideframeScreenHandler {
         player.sendMessage((result.success() ? ChatColor.GREEN : ChatColor.RED) + result.message());
         String notice = !result.success() ? result.message() : (sell ? "Vendiste " : "Compraste ") + name(entry.get())
             + (lots > 1 ? " (x" + lots + ")" : "") + " por "
-            + plain(actions.format((sell ? entry.get().sellPrice() : entry.get().buyPrice()) * lots)) + ".";
+            + plain(actions.format((sell ? entry.get().sellPrice() : actions.buyPrice(entry.get())) * lots)) + ".";
         show(tideframe, player, view.categoryId(), view.page(), view.lots(), notice);
     }
 
@@ -301,10 +311,11 @@ final class ShopTideframeMenu implements TideframeScreenHandler {
             Map<String, String> row = new LinkedHashMap<>();
             row.put("id", entry.id());
             int items = entry.amount() * lots;
-            row.put("nombre", items > 1 ? name(entry) + " x" + items : name(entry));
+            String tag = actions.priceTag(entry);
+            row.put("nombre", (items > 1 ? name(entry) + " x" + items : name(entry)) + (tag.isEmpty() ? "" : " · " + tag));
             // Buy / sell of the quantity chosen, as the inventory menu's lore; "—" when it cannot be sold. A purchase
             // the balance does not cover shows what is missing instead of its price.
-            double price = entry.buyPrice() * lots;
+            double price = actions.buyPrice(entry) * lots;
             String buy = funds < price ? "falta " + plain(actions.format(price - funds)) : plain(actions.format(price));
             row.put("precio", buy + " / " + (entry.sellPrice() > 0 ? plain(actions.format(entry.sellPrice() * lots)) : "—"));
             rows.add(row);

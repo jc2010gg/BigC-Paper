@@ -235,15 +235,32 @@ public final class MissionModule implements PluginModule {
         stateCache.put(player.getUniqueId(), claimed);
         dirtyPlayers.remove(player.getUniqueId());
         double amount = sumClaimables(state);
-        // What really changed from ready to claimed: this week's total, and the streak once every daily is claimed.
-        records.addClaimed(player, claimed.weeklyResetsAt(), MissionOrder.pendingReward(state) - MissionOrder.pendingReward(claimed));
+        // What really changed from ready to claimed: the base of the bonus, this week's total, and the streak once
+        // every daily is claimed (the bonus counts the streak before today's).
+        double paid = MissionOrder.pendingReward(state) - MissionOrder.pendingReward(claimed);
+        java.time.LocalDate day = today();
+        dev.linqfy.bigCasares.platform.HappyHour happy = dev.linqfy.bigCasares.platform.HappyHour.load(plugin.getConfig());
+        double rate = MissionBonus.load(plugin.getConfig()).rate(records.streak(player, day),
+            happy.active(java.time.ZonedDateTime.now()) ? happy.missionMultiplier() : 1);
+        double bonus = paid > 0 ? Math.round(paid * rate * 100) / 100.0 : 0;
+        if (bonus > 0) {
+            try {
+                economyGateway.deposit(player.getUniqueId(), bonus);
+            } catch (IllegalStateException refused) {
+                // The rewards themselves are already paid and saved; only the extra is lost, and the log says why.
+                plugin.getLogger().warning("No se pudo pagar el bono de misiones a " + player.getName() + ": " + refused.getMessage());
+                bonus = 0;
+            }
+        }
+        records.addClaimed(player, claimed.weeklyResetsAt(), paid + bonus);
         if (!claimed.dailyAssignments().isEmpty()
             && claimed.dailyAssignments().values().stream().allMatch(assignment -> assignment.snapshot().claimed())) {
-            records.dailiesDone(player, today());
+            records.dailiesDone(player, day);
         }
         if (amount > 0.0) {
             dev.linqfy.bigCasares.platform.FeedbackSounds.reward(player);
-            player.sendMessage("§aReclamaste " + economyGateway.format(amount) + " en recompensas.");
+            player.sendMessage("§aReclamaste " + economyGateway.format(amount) + " en recompensas."
+                + (bonus > 0 ? " §6+" + economyGateway.format(bonus) + " de bono." : ""));
         } else {
             player.sendMessage("§eNo tenes recompensas pendientes.");
         }

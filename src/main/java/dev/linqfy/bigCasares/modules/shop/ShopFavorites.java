@@ -70,7 +70,8 @@ final class ShopFavorites {
         List<ShopEntry> entries = new ArrayList<>();
         for (String key : keys(player)) {
             resolve(catalog, key).ifPresent(entry -> entries.add(new ShopEntry(key, entry.slot(), entry.material(),
-                entry.customItemId(), entry.amount(), entry.buyPrice(), entry.sellPrice(), entry.displayName(), entry.lore())));
+                entry.customItemId(), entry.amount(), entry.buyPrice(), entry.sellPrice(), entry.displayName(), entry.lore(),
+                entry.dailyLimit())));
         }
         return entries.isEmpty() ? Optional.empty()
             : Optional.of(new ShopCategory(CATEGORY, NAME, Material.NETHER_STAR, 0, entries));

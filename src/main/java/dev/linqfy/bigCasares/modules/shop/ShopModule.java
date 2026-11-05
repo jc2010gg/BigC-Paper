@@ -49,6 +49,8 @@ public final class ShopModule implements PluginModule {
     private final ShopFormGeneration formGeneration = new ShopFormGeneration();
     private final ShopHistory history = new ShopHistory();
     private final ShopFavorites favorites;
+    private volatile dev.linqfy.bigCasares.platform.HappyHour happyHour = dev.linqfy.bigCasares.platform.HappyHour.OFF;
+    private boolean happyHourWasActive;
     private final dev.linqfy.bigCasares.platform.PlayerStrings playerStrings;
     /** The id of the Bedrock form's quantity button; never a catalog entry id (those come from shop.yml keys). */
     static final String QUANTITY_BUTTON = "#cantidad";
@@ -97,6 +99,8 @@ public final class ShopModule implements PluginModule {
             }
         });
         plugin.getServer().getOnlinePlayers().forEach(this::restoreHistory);
+        // The happy hour says in chat when it starts and ends (checked every minute; nothing while it is off).
+        registrations.scheduleRepeating("happy-hour-announcer", this::announceHappyHour, 1200L, 1200L);
         plugin.saveResource("shop.yml", false);
         reload();
     }
@@ -133,6 +137,12 @@ public final class ShopModule implements PluginModule {
         YamlConfiguration configuration = YamlConfiguration.loadConfiguration(file);
         this.catalog = new ShopCatalogLoader().load(configuration);
         this.economyGateway = new ShopEconomyGateway(plugin, economy);
+        // Offers (shop.yml "ofertas") and the happy hour (config.yml "eventos.hora-feliz"), both off by default, and the
+        // daily limits of shop.yml entries: one price and one count for every menu.
+        ShopCatalog loaded = catalog;
+        this.happyHour = dev.linqfy.bigCasares.platform.HappyHour.load(plugin.getConfig());
+        ShopPricing pricing = new ShopPricing(loaded, ShopPricing.Offers.load(configuration), happyHour, java.time.ZonedDateTime::now);
+        ShopDailyLimits limits = new ShopDailyLimits(playerStrings, java.time.LocalDate::now, loaded::keyOf);
         this.service = new ShopService(
             new ShopItemResolver(plugin.getCustomItemRegistry()),
             economyGateway,
@@ -144,7 +154,9 @@ public final class ShopModule implements PluginModule {
                     history.record(player.getUniqueId(), result.message());
                     playerStrings.set(player, ShopHistory.KEY, history.encode(player.getUniqueId()));
                 }
-            }
+            },
+            pricing,
+            limits
         );
         if (guiController != null) {
             guiController.closeAll();
@@ -171,6 +183,8 @@ public final class ShopModule implements PluginModule {
             @Override public boolean toggleFavorite(Player player, String categoryId, String entryId) {
                 return favorites.toggle(player, categoryId, entryId);
             }
+            @Override public double buyPrice(ShopEntry entry) { return ownedService.buyPrice(entry); }
+            @Override public String priceTag(ShopEntry entry) { return ownedService.priceTag(entry); }
             @Override public String format(double amount) { return ownedEconomy.format(amount); }
         }, () -> tideframe.get());
         this.tideframeMenu = menu;
@@ -281,7 +295,9 @@ public final class ShopModule implements PluginModule {
         java.util.Set<String> favoriteKeys = favorites.keys(player);
         List<ShopViewItem> items = bedrockCategoryItems(category, lots, mode, funds,
             entry -> activeService == null ? 0 : activeService.owned(player, entry), economyGateway::format,
-            entry -> favoriteKeys.contains(favoriteKey(category.id(), entry.id())));
+            entry -> favoriteKeys.contains(favoriteKey(category.id(), entry.id())),
+            entry -> activeService == null ? entry.buyPrice() : activeService.buyPrice(entry),
+            entry -> activeService == null ? "" : activeService.priceTag(entry));
         ShopView view = new ShopView(category.id(), category.name(), mode.help, economyGateway.format(funds), items);
         BukkitRuntimeRegistrations activeRegistrations = registrations;
         boolean sent = bedrockFormSender.send(playerId, view,
@@ -355,7 +371,9 @@ public final class ShopModule implements PluginModule {
     static List<ShopViewItem> bedrockCategoryItems(ShopCategory category, int lots, BedrockMode mode, double funds,
                                                    java.util.function.ToIntFunction<ShopEntry> owned,
                                                    java.util.function.DoubleFunction<String> money,
-                                                   java.util.function.Predicate<ShopEntry> favorite) {
+                                                   java.util.function.Predicate<ShopEntry> favorite,
+                                                   java.util.function.ToDoubleFunction<ShopEntry> unitPrice,
+                                                   java.util.function.Function<ShopEntry, String> tag) {
         List<ShopViewItem> items = new ArrayList<>();
         items.add(new ShopViewItem(BACK_BUTTON, "§7« Volver a las categorías", "", "", null, true));
         items.add(new ShopViewItem(QUANTITY_BUTTON, "§bCantidad: x" + lots + " §7(tocá para cambiar)", "", "", null, true));
@@ -369,7 +387,7 @@ public final class ShopModule implements PluginModule {
                 available = true;
                 price = favorite.test(entry) ? "★ en tus favoritos" : "☆ tocá para agregar";
             } else if (mode == BedrockMode.BUY) {
-                double cost = entry.buyPrice() * lots;
+                double cost = unitPrice.applyAsDouble(entry) * lots;
                 available = funds >= cost;
                 price = money.apply(cost) + (available ? "" : " (faltan " + money.apply(cost - funds) + ")");
             } else if (entry.sellPrice() <= 0) {
@@ -380,9 +398,10 @@ public final class ShopModule implements PluginModule {
                 available = carried >= count;
                 price = money.apply(entry.sellPrice() * lots) + (available ? "" : " (tenés " + carried + ")");
             }
+            String label = tag.apply(entry);
             items.add(new ShopViewItem(
                 entry.id(),
-                count > 1 ? name + " §7x" + count : name,
+                (count > 1 ? name + " §7x" + count : name) + (label.isEmpty() ? "" : " §6" + label),
                 String.join("\n", entry.lore()),
                 price,
                 null,
@@ -450,6 +469,24 @@ public final class ShopModule implements PluginModule {
     /** The player's last purchases and sales, from every menu (kept with the player across restarts). */
     public ShopHistory history() {
         return history;
+    }
+
+    private void announceHappyHour() {
+        dev.linqfy.bigCasares.platform.HappyHour current = happyHour;
+        boolean active = current.active(java.time.ZonedDateTime.now());
+        if (active == happyHourWasActive) {
+            return;
+        }
+        happyHourWasActive = active;
+        String message = active
+            ? "§6§l¡Hora feliz! §eLas misiones pagan x" + trimmed(current.missionMultiplier()) + " y la tienda tiene "
+                + Math.round(current.shopDiscount() * 100) + "% de descuento."
+            : "§7Terminó la hora feliz.";
+        plugin.getServer().getOnlinePlayers().forEach(player -> player.sendMessage(message));
+    }
+
+    private static String trimmed(double value) {
+        return value == Math.rint(value) ? Long.toString((long) value) : Double.toString(value);
     }
 
     private void restoreHistory(Player player) {

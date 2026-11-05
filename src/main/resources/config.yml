@@ -681,6 +681,11 @@ mission-system:
     daily-hour: 8
     weekly-day: MONDAY
     weekly-hour: 8
+  # Bono por racha (dias seguidos cobrando todas las diarias). Apagado por defecto. bono-por-dia hasta 0.2, maximo hasta 1.
+  racha:
+    enabled: false
+    bono-por-dia: 0.05
+    maximo: 0.5
   missions:
     daily-bed-5:
       scope: daily
@@ -1755,3 +1760,14 @@ glider:
         enabled: true
         power: 0.78
         cooldown: 35
+
+# Hora feliz: misiones pagan mas y la tienda baja sus precios de compra (nunca los de venta). Apagada por defecto.
+# dias: MONDAY..SUNDAY; desde/hasta HH:mm (si hasta es menor, cruza la medianoche); premio-misiones 1 a 5; descuento-tienda 0 a 0.5.
+eventos:
+  hora-feliz:
+    enabled: false
+    dias: [SATURDAY]
+    desde: "20:00"
+    hasta: "22:00"
+    premio-misiones: 2.0
+    descuento-tienda: 0.1

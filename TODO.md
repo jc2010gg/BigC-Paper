@@ -157,6 +157,11 @@ Tideframe, no el dibujo ni los clics en un cliente. Ver [docs/tideframe.md](docs
   primera, compra el producto real y sobrevive a salir y reiniciar el servidor; vacía, desaparece.
 - [ ] Misiones: cobrar suma a "esta semana $X" (pestaña Semanales) y se reinicia con la semana; cobrar todas las
   diarias suma un día a la "racha" (Diarias), que se corta si pasa un día sin hacerlo. Ambos sobreviven a reiniciar.
+- [ ] Con `ofertas.enabled: true`: dos productos con "OFERTA -20%" en los tres menús, el mismo precio que se cobra,
+  los mismos para todos y otros al día siguiente; el precio de venta no cambia.
+- [ ] `limite-diario: 2` en un producto: el tercer lote del día no cobra nada y lo dice; al otro día se renueva.
+- [ ] Hora feliz activa: aviso en el chat al empezar y terminar, "HORA FELIZ -10%" en la tienda, misiones con bono.
+- [ ] Bono por racha activo: al cobrar, "+$X de bono" según los días de racha.
 - [ ] Entrar con misiones listas sin cobrar: a los 3 segundos llega "Tenés N misiones para cobrar"; sin nada, no llega.
 - [ ] "Cambiar" en Diarias (Java) y "Cambiar las diarias" (Bedrock): el primer toque pregunta, el segundo cambia;
   no aparece con una diaria lista sin cobrar ni dos veces el mismo día; `/misiones reroll` también se niega.
