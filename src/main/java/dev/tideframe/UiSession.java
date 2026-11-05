@@ -182,7 +182,9 @@ public final class UiSession implements AutoCloseable {
                 lastFrameContent=frame;
                 Component content=frame.append(cursorGlyphs.isEmpty()?Component.empty():HudText.layer(hudAssets,cursorGlyphs,displayQuarters,shownScreen));
                 // An opening slide moves everything sideways: the whole title stays balanced (zero net advance).
-                content=shifted(content,slideUnits(shownScreen,now-started),displayQuarters);
+                // No game drop shadow: it drew a dimmed copy of every glyph (text and button sprites) offset behind the
+                // menu. Set on the root, so every layer inherits it; screens draw their own shadows when they want one.
+                content=Shadow.off(shifted(content,slideUnits(shownScreen,now-started),displayQuarters));
                 player.showTitle(Title.title(content,Component.empty(),
                     Title.Times.times(entrance&&fade>0?Duration.ofNanos(fade):Duration.ZERO,Duration.ofMillis(750),Duration.ZERO)));
                 if(entrance){entranceSent=true;entranceAt=now;}
@@ -202,7 +204,7 @@ public final class UiSession implements AutoCloseable {
                 +'\u0005'+slideUnits(UiSession.this.screen,now-started);});
         renderer.setQuarters(displayQuarters);
         input=CameraPackets.installInput(player,new CameraPackets.InputCallbacks(()->scheduler.entity(player,this::click),
-            ()->scheduler.entity(player,this::rightClick),key->scheduler.entity(player,()->{if(!closed.get())keyListener.accept(key);})),this::onRotation);
+            ()->{noteRightClick();scheduler.entity(player,this::rightClick);},key->scheduler.entity(player,()->{if(!closed.get())keyListener.accept(key);})),this::onRotation);
         camera=SessionCleanup.openCamera(()->{
             if(model==null)return CameraPackets.channel(player);
             var channel=CameraPackets.channel(player,model);modelChannel=channel;spinYaw=ModelPlacement.facing(initial.getYaw());return channel;
@@ -264,7 +266,7 @@ public final class UiSession implements AutoCloseable {
             started=scheduler.repeat(player,()->{
                 long age=System.nanoTime()-begin;
                 if(age>=duration||!player.isOnline()){stop.run();player.clearTitle();return;}
-                player.showTitle(Title.title(shifted(frame,exitUnits(closing,age),displayQuarters),Component.empty(),
+                player.showTitle(Title.title(Shadow.off(shifted(frame,exitUnits(closing,age),displayQuarters)),Component.empty(),
                     Title.Times.times(Duration.ZERO,Duration.ofMillis(750),Duration.ZERO)));
             });
         } catch(RuntimeException unavailable) {player.clearTitle();return;}
@@ -381,6 +383,19 @@ public final class UiSession implements AutoCloseable {
     }
     public void click() {press(Click.LEFT);}
     public void rightClick() {press(Click.RIGHT);}
+    /**
+     * A right click the client takes as done (an entity or item used) makes it swing the arm right after, and a swing
+     * is otherwise a left click: without this, one right click in a shop sold and then bought. A swing that follows a
+     * right click within {@link SwingFilter#WINDOW_NANOS} is that echo, not a click.
+     */
+    private final SwingFilter swings=new SwingFilter(System::nanoTime);
+    /** Any thread, as the right click arrives (before it is scheduled): the next swing may be its echo. */
+    public void noteRightClick() {swings.rightClick();}
+    /**
+     * Any thread, as the swing arrives: true when it is a left click (schedule {@link #click()}), false when it echoes a
+     * right click. Decided on arrival, never when the scheduled task runs, so a slow queue cannot turn an echo into a click.
+     */
+    public boolean swingIsClick() {return swings.isClick();}
     private void press(Click type) {
         long now=System.nanoTime();
         var frame=refreshInput(now);

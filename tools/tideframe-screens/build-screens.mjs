@@ -61,10 +61,12 @@ const missions = page('bigc_misiones', 'Misiones', make => ({
     closeX(make),
     make('label', 'titulo', 'Misiones', [40, 216], 19, 16, { ...TEXT, textAlign: 'center', textScale: 2, textColor: GOLD, textOutline: INK }),
     make('label', 'reinicio', '{bigc_titulo} · {bigc_reinicio}', [24, 232], 32, 9, { ...TEXT, textAlign: 'center', textColor: MUTED }),
-    make('button', 'diarias', 'Diarias', [67, 125], 43, 11, BUTTON, { background: true, border: true, shape: 'rounded' }),
-    make('button', 'semanales', 'Semanales', [131, 189], 43, 11, BUTTON, { background: true, border: true, shape: 'rounded' }),
+    // Tabs on the left, over the list's first column; "Cambiar" on the right, as wide as "Reclamar" below it so its
+    // longest text ("¿Seguro?") fits inside the border.
+    make('button', 'diarias', 'Diarias', [22, 80], 43, 11, BUTTON, { background: true, border: true, shape: 'rounded' }),
+    make('button', 'semanales', 'Semanales', [86, 148], 43, 11, BUTTON, { background: true, border: true, shape: 'rounded' }),
     // Changes the daily missions (once a day, never over a ready reward); the second tap confirms.
-    make('button', 'cambiar', '{bigc_cambiar}', [195, 238], 43, 11, { ...BUTTON, borderColor: '#f2c46b' }, { background: true, border: true, shape: 'rounded' }),
+    make('button', 'cambiar', '{bigc_cambiar}', [178, 238], 43, 11, { ...BUTTON, borderColor: '#f2c46b' }, { background: true, border: true, shape: 'rounded' }),
     make('label', 'col_mision', 'Misión', [22, 136], 55, 8, { ...TEXT, textColor: MUTED }),
     make('label', 'col_progreso', 'Progreso', [136, 184], 55, 8, { ...TEXT, textAlign: 'center', textColor: MUTED }),
     make('label', 'col_premio', 'Premio', [184, 234], 55, 8, { ...TEXT, textAlign: 'right', textColor: MUTED }),

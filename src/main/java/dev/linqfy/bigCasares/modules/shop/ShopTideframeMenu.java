@@ -240,7 +240,7 @@ final class ShopTideframeMenu implements TideframeScreenHandler {
     }
 
     private static String name(ShopEntry entry) {
-        return plain(entry.displayName() == null ? entry.id() : entry.displayName());
+        return entry.label();
     }
 
     private void close(TideframeUi tideframe, Player player) {

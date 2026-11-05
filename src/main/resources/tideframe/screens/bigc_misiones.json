@@ -204,7 +204,7 @@
     {
       "id": "diarias",
       "text": "Diarias",
-      "x": -0.25,
+      "x": -0.602,
       "y": 0.403,
       "width": 0.453,
       "height": 0.153,
@@ -243,9 +243,9 @@
     {
       "id": "semanales",
       "text": "Semanales",
-      "x": 0.25,
+      "x": -0.086,
       "y": 0.403,
-      "width": 0.453,
+      "width": 0.484,
       "height": 0.153,
       "kind": "button",
       "action": "",
@@ -282,9 +282,9 @@
     {
       "id": "cambiar",
       "text": "{bigc_cambiar}",
-      "x": 0.691,
+      "x": 0.625,
       "y": 0.403,
-      "width": 0.336,
+      "width": 0.469,
       "height": 0.153,
       "kind": "button",
       "action": "",

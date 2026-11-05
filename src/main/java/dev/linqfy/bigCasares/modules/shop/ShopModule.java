@@ -240,7 +240,7 @@ public final class ShopModule implements PluginModule {
     }
 
     public void configureTideframeNavigation(java.util.function.Supplier<dev.linqfy.bigCasares.modules.tideframe.TideframeUi> navigation) {
-        this.tideframeNavigation = navigation;
+        this.tideframeNavigation = navigation == null ? () -> dev.linqfy.bigCasares.modules.tideframe.TideframeUi.NONE : navigation;
     }
 
     private void openClassicCategory(Player player, ShopCategory category) {
@@ -250,6 +250,11 @@ public final class ShopModule implements PluginModule {
     }
 
     private void openNpcShop(Player player, String shopId) {
+        // With a Tideframe menu up the click is the menu's (Tideframe answers it as a right click): opening the shop
+        // again would only queue the classic menu for when that screen closes.
+        if (tideframeNavigation.get().menuOpen(player)) {
+            return;
+        }
         ShopCategory category = catalog.category(shopId).orElse(null);
         if (category == null) {
             openMainMenu(player);

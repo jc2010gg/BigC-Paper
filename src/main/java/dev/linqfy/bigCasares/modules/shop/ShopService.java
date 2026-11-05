@@ -126,7 +126,7 @@ public final class ShopService {
         }
         limits.bought(player, entry, lots);
         int overflowRemoved = postGrantEnforcer.applyAsInt(player);
-        return ShopTransactionResult.success("Compraste " + entry.id() + times(lots) + " por " + economy.format(price) + ".", purchased, overflowRemoved);
+        return ShopTransactionResult.success("Compraste " + entry.label() + times(lots) + " por " + economy.format(price) + ".", purchased, overflowRemoved);
     }
 
     public ShopTransactionResult sell(Player player, ShopEntry entry) {
@@ -154,7 +154,7 @@ public final class ShopService {
 
         removeMatching(contents, entry, needed);
         player.getInventory().setStorageContents(contents);
-        return ShopTransactionResult.success("Vendiste " + entry.id() + times(lots) + " por " + economy.format(price) + ".", null);
+        return ShopTransactionResult.success("Vendiste " + entry.label() + times(lots) + " por " + economy.format(price) + ".", null);
     }
 
     private ShopTransactionResult observed(Player player, ShopTransactionResult result) {

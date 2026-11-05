@@ -1091,12 +1091,24 @@ public final class TideframePlugin implements Listener,TideframeApi {
     @EventHandler(priority=EventPriority.HIGHEST) public void interact(PlayerInteractEvent event) {
         var session=sessions.get(event.getPlayer().getUniqueId());if(session==null){openFromInteract(event);return;}
         event.setCancelled(true);
-        if (event.getAction()==Action.LEFT_CLICK_AIR || event.getAction()==Action.LEFT_CLICK_BLOCK) scheduler.entity(event.getPlayer(),session::click);
-        else if (event.getAction()==Action.RIGHT_CLICK_AIR || event.getAction()==Action.RIGHT_CLICK_BLOCK) scheduler.entity(event.getPlayer(),session::rightClick);
+        // Left click on air comes from the arm swing packet, which also follows a right click: see UiSession#swingIsClick.
+        if (event.getAction()==Action.LEFT_CLICK_AIR) {if(session.swingIsClick())scheduler.entity(event.getPlayer(),session::click);}
+        else if (event.getAction()==Action.LEFT_CLICK_BLOCK) scheduler.entity(event.getPlayer(),session::click);
+        else if (event.getAction()==Action.RIGHT_CLICK_AIR || event.getAction()==Action.RIGHT_CLICK_BLOCK) {session.noteRightClick();scheduler.entity(event.getPlayer(),session::rightClick);}
+    }
+    /**
+     * With a menu open the player's clicks belong to it: cancelled first, so listeners that skip cancelled interactions
+     * (a villager that steals on right click, for one) never act on the entity behind the menu. The HIGHEST handler
+     * below cancels again and turns the click into the menu's right click.
+     */
+    @EventHandler(priority=EventPriority.LOWEST) public void claimEntityInteraction(PlayerInteractEntityEvent event) {
+        if(sessions.containsKey(event.getPlayer().getUniqueId()))event.setCancelled(true);
     }
     @EventHandler(priority=EventPriority.HIGHEST) public void interactEntity(PlayerInteractEntityEvent event) {
         var session=sessions.get(event.getPlayer().getUniqueId());if(session==null)return;
         event.setCancelled(true);
+        // Both hands' events mark the right click (the swing that follows may come from either); one press only.
+        session.noteRightClick();
         if(event.getHand()==org.bukkit.inventory.EquipmentSlot.HAND)scheduler.entity(event.getPlayer(),session::rightClick);
     }
     /** Number keys and the mouse wheel: the slot stays put while a menu is open, the change becomes a key or a wheel step. */
@@ -1193,7 +1205,7 @@ public final class TideframePlugin implements Listener,TideframeApi {
         if(sessions.containsKey(player.getUniqueId()))scheduler.entity(player,()->closeMenu(player,TideframeCloseEvent.Reason.DEATH));
     }
     @EventHandler public void swing(PlayerAnimationEvent event) {
-        var session=sessions.get(event.getPlayer().getUniqueId());if(session!=null)scheduler.entity(event.getPlayer(),session::click);
+        var session=sessions.get(event.getPlayer().getUniqueId());if(session!=null){if(session.swingIsClick())scheduler.entity(event.getPlayer(),session::click);}
         // During a boss fight a swing (left click on air, block or the boss) answers a CLICK prompt.
         else if(challenges.active(event.getPlayer()))challenges.key(event.getPlayer(),dev.tideframe.core.demo.KeyChallenge.Key.CLICK);
     }

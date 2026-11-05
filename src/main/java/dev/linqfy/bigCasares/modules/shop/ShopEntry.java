@@ -21,4 +21,11 @@ public record ShopEntry(
                      double sellPrice, String displayName, List<String> lore) {
         this(id, slot, material, customItemId, amount, buyPrice, sellPrice, displayName, lore, 0);
     }
+
+    /** The name players read: the display name without colour codes, or the id when it has none. */
+    public String label() {
+        String plain = displayName == null ? ""
+            : org.bukkit.ChatColor.stripColor(org.bukkit.ChatColor.translateAlternateColorCodes('&', displayName)).strip();
+        return plain.isEmpty() ? id : plain;
+    }
 }
