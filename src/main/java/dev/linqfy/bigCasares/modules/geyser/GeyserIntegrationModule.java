@@ -85,6 +85,10 @@ public final class GeyserIntegrationModule implements PluginModule {
             if (settings.customItems()) {
                 customItemDefinitions().forEach(runtime::registerCustomItem);
                 celularItemDefinitions().forEach(runtime::registerCustomItem);
+                GeyserSiftContent.items().forEach(runtime::registerCustomItem);
+            }
+            if (settings.customBlocks()) {
+                registerSiftBlocks(runtime);
             }
             if (settings.customEntities()) {
                 runtime.registerCustomEntity(new GeyserCustomEntityDefinition(
@@ -97,6 +101,7 @@ public final class GeyserIntegrationModule implements PluginModule {
                     "BAT", "bigcasares:sahur_bat", "sahur_bat_id"));
                 runtime.registerCustomEntity(new GeyserCustomEntityDefinition(
                     "MANNEQUIN", "bigcasares:merchant", "shop_npc_id"));
+                GeyserSiftContent.entities().forEach(runtime::registerCustomEntity);
                 plugin.getLogger().warning("La API de entidades custom de Geyser 2.11 es experimental; los fallbacks siguen activos.");
             }
         } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException
@@ -182,6 +187,14 @@ public final class GeyserIntegrationModule implements PluginModule {
             "bigcasares." + model,
             displayName
         );
+    }
+
+    private void registerSiftBlocks(GeyserApiFacade runtime) {
+        try (InputStream input = plugin.getResource(GeyserSiftContent.BLOCKS)) {
+            GeyserSiftContent.blocks(input).forEach(runtime::registerCustomBlock);
+        } catch (IOException ex) {
+            plugin.getLogger().log(Level.WARNING, "No se pudieron leer los bloques Bedrock de The Sift.", ex);
+        }
     }
 
     private Optional<Path> extractBedrockPack() {

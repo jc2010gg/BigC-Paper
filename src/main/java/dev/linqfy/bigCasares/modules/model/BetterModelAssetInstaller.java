@@ -39,6 +39,20 @@ public final class BetterModelAssetInstaller {
         "toxic_mob", "toxic_brute", "toxic_spitter"
     );
 
+    private static final List<String> SIFT_ASSETS = List.of(
+        "the_sift_blub.bbmodel",
+        "the_sift_blub_tamed.bbmodel",
+        "the_sift_singer.bbmodel",
+        "the_sift_rift.bbmodel",
+        "the_sift_rift_overworld.bbmodel",
+        "the_sift_sifter.bbmodel",
+        "the_sift_echo_golem.bbmodel",
+        "the_sift_dark_sniffer.bbmodel"
+    );
+
+    private static final List<String> SIFT_MODEL_KEYS = List.of("the_sift_blub", "the_sift_blub_tamed", "the_sift_singer",
+        "the_sift_rift", "the_sift_rift_overworld", "the_sift_sifter", "the_sift_echo_golem", "the_sift_dark_sniffer");
+
     private BetterModelAssetInstaller() { }
 
     public static void installSahurModels(JavaPlugin plugin) {
@@ -55,6 +69,15 @@ public final class BetterModelAssetInstaller {
      */
     public static void installToxicMobModel(JavaPlugin plugin) {
         install(plugin, TOXIC_MOB_ASSETS, TOXIC_MOB_MODEL_KEYS, "Toxic Mobs");
+    }
+
+    /**
+     * Installs The Sift creature models converted from Mielon's The Sift by
+     * {@code tools/convert_geckolib_bbmodel.py} (the Dark Sniffer's, a vanilla sniffer model with the mod's
+     * texture, comes from {@code tools/generate_dark_sniffer_bbmodel.py}).
+     */
+    public static void installSiftModels(JavaPlugin plugin) {
+        install(plugin, SIFT_ASSETS, SIFT_MODEL_KEYS, "The Sift");
     }
 
     private static void install(JavaPlugin plugin, List<String> assetNames, List<String> modelKeys, String label) {

@@ -5,11 +5,14 @@ import kr.toxicity.model.api.animation.AnimationModifier;
 import kr.toxicity.model.api.bukkit.platform.BukkitAdapter;
 import kr.toxicity.model.api.tracker.EntityTracker;
 import kr.toxicity.model.api.tracker.ModelScaler;
+import kr.toxicity.model.api.tracker.TrackerUpdateAction;
 import org.bukkit.entity.Entity;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 final class BetterModelJavaModelGateway implements JavaModelGateway {
     private final TrackerPort trackerPort;
@@ -53,11 +56,29 @@ final class BetterModelJavaModelGateway implements JavaModelGateway {
     }
 
     @Override
+    public boolean stopAnimation(JavaModelHandle handle, String animationKey) {
+        Objects.requireNonNull(handle, "handle");
+        Objects.requireNonNull(animationKey, "animationKey");
+
+        var session = sessions.get(handle);
+        return session != null && session.stopAnimation(animationKey);
+    }
+
+    @Override
     public boolean scale(JavaModelHandle handle, float factor) {
         Objects.requireNonNull(handle, "handle");
 
         var session = sessions.get(handle);
         return session != null && session.scale(factor);
+    }
+
+    @Override
+    public boolean brighten(JavaModelHandle handle, int block, int sky, Collection<String> bones) {
+        Objects.requireNonNull(handle, "handle");
+        Objects.requireNonNull(bones, "bones");
+
+        var session = sessions.get(handle);
+        return session != null && session.brighten(block, sky, bones);
     }
 
     @Override
@@ -107,9 +128,27 @@ final class BetterModelTrackerPort implements TrackerPort {
         }
 
         @Override
+        public boolean stopAnimation(String animationKey) {
+            return tracker.stopAnimation(animationKey);
+        }
+
+        @Override
         public boolean scale(float factor) {
             tracker.scaler(ModelScaler.value(factor));
             return true;
+        }
+
+        @Override
+        public boolean brighten(int block, int sky, Collection<String> bones) {
+            var names = Set.copyOf(bones);
+            try {
+                tracker.update(TrackerUpdateAction.brightness(block, sky),
+                    bone -> names.contains(bone.name().name()) || names.contains(bone.name().rawName()));
+                return true;
+            } catch (RuntimeException | LinkageError unsupported) {
+                // A glow is cosmetic: a BetterModel without per-bone brightness must not stop the model from showing.
+                return false;
+            }
         }
 
         @Override
@@ -133,7 +172,15 @@ interface TrackerSession {
 
     boolean animateOnce(String animationKey, Runnable onEnd);
 
+    default boolean stopAnimation(String animationKey) {
+        return false;
+    }
+
     boolean scale(float factor);
+
+    default boolean brighten(int block, int sky, Collection<String> bones) {
+        return false;
+    }
 
     void close();
 }

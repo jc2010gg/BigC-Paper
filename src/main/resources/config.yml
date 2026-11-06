@@ -45,6 +45,12 @@ modules:
     enabled: true
   tideframe-ui:
     enabled: true
+  dimension-framework:
+    enabled: true
+  custom-content:
+    enabled: true
+  the-sift:
+    enabled: true
 
 # Tideframe integrado en este JAR: solo para jugadores de Java con su pack cargado.
 # Con el modulo apagado, en Bedrock o si la pantalla falla, se usan los menus de siempre.
@@ -1622,6 +1628,8 @@ geyser-integration:
   bedrock-forms: true
   bedrock-resource-pack: true
   custom-items: true
+  # Bedrock blocks for the content blocks drawn with mushroom-block states (the Sift's terrain).
+  custom-blocks: true
   safe-fallbacks: true
 
 team-system:
@@ -1771,3 +1779,89 @@ eventos:
     hasta: "22:00"
     premio-misiones: 2.0
     descuento-tienda: 0.1
+
+# Custom dimensions (see docs/dimensions/README.md). Dimensions, dimension types
+# and biomes are read by Minecraft only at server start: after the datapack is
+# installed or changed, restart the server.
+dimension-framework:
+  datapack:
+    # auto: write <level>/datapacks/<folder>; manual: only write
+    # plugins/BigCasares/dimensions/generated-datapack for an operator to copy.
+    install-mode: auto
+    folder: bigcasares-dimensions
+  autosave-minutes: 5
+
+# The Sift, ported from Mielon's The Sift (MIT). See docs/dimensions/the-sift.md.
+the-sift:
+  # Deterministic variation on top of the world seed (Minecraft shares one seed
+  # across dimensions). Changing it regenerates only chunks not generated yet.
+  seed-salt: 0
+  world-border-diameter: 60000
+  # Empty = anyone may enter.
+  entry-permission: ""
+  travel-cooldown-seconds: 5
+  # Original addition: a buildable portal so the Sift is reachable on any world.
+  crafted-portal:
+    enabled: true
+    frame-block: minecraft:crying_obsidian
+    activation-item: minecraft:echo_shard
+  # The mod's Ancient City ritual (goat horn, Sonorous Deepslate, note melody).
+  ancient-city-ritual:
+    enabled: true
+  # Shifting tides: Flow -> Endure -> Thrive (interpretation; see docs).
+  tides:
+    enabled: true
+    flow-ticks: 24120
+    endure-ticks: 24120
+    thrive-ticks: 24120
+  ichor:
+    regeneration: true
+    slowness: true
+  blubs:
+    enabled: true
+  # The mod's rifts: temporary exits that open near players in the Sift.
+  rifts:
+    enabled: true
+  # The mod's Sifters: fast, hard-biting hostiles that spawn in groups near players
+  # (every 80 ticks, never on Peaceful). Drops raw Sifter meat.
+  sifters:
+    enabled: true
+  # The mod's Singer: comes out of the ground when an Echo Golem brings a Soul
+  # Block, roams for 30 seconds and gives gifts for Soul Blocks.
+  singers:
+    enabled: true
+  # The mod's Echo Golem: spawns near Soul Canyons and near players, carries Soul
+  # Blocks out of the canyons to a Singer, or to a player it was given an Echo Shard by.
+  echo-golems:
+    enabled: true
+  # The mod's Dark Sniffers: sculk-region sniffers that hunt players and ordinary sniffers (sonic
+  # sniff pulls the prey in), dig Sculkflower Seeds on sculk, are petted by calm Wardens and
+  # infect sniffers that dig sculk. Needs BetterModel for their model.
+  dark-sniffers:
+    enabled: true
+  # The mod's Sculkflower: seeds planted on sculk, healthy sculk or farmland grow into the flower.
+  sculkflowers:
+    enabled: true
+  # The mod's main portal: every Ancient City portal leads to one structure in the Sift,
+  # built once (asynchronously, ~400 chunks) when the dimension first activates. Disabled:
+  # portals keep 1:1 coordinates and build a small return frame.
+  main-portal:
+    enabled: true
+  # Server-side substitutes for what the mod gets from random ticks, fall callbacks and its client.
+  # Random ticks for Siftslate Growth / Dry Healthy Sculk Growth (die in the dark) and willow foliage
+  # (decays without logs): a bounded sampler, this many samples per 16x16x16 section per second
+  # (vanilla's random tick speed is 60). At most 8000 samples every 5 ticks whatever the player count.
+  random-ticks:
+    enabled: true
+    samples-per-section-per-second: 8
+  # Healthy Sculk destroys the crop a player lands on (falls of more than half a block).
+  crop-trampling:
+    enabled: true
+  # Moving light blocks for the Singer (level 15) and an Echo Golem carrying a Soul Block (level 14).
+  dynamic-lights:
+    enabled: true
+  # The mod's models drawn over placed slabs, stairs, walls, doors, plants... (vanilla look-alikes) for Java
+  # players within radius blocks. Players turn them off for themselves with /siftmodels off.
+  block-models:
+    enabled: true
+    radius: 24

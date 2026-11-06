@@ -125,6 +125,17 @@ commands:
     description: Opens the warp menu or manages warps
     usage: /<command> [manage]
     aliases: [ warps ]
+  dimension:
+    description: Inspect and travel between BigCasares custom dimensions
+    usage: /<command> <list|info|tp|leave|locate|phase|pack|export>
+    aliases: [ dim ]
+  siftmodels:
+    description: Turns The Sift's block models over placed slabs, stairs and plants on or off for yourself
+    usage: /<command> [on|off] [player]
+  content:
+    description: List and give code-defined content items (e.g. The Sift)
+    usage: /<command> <list [namespace]|give <id> [player] [amount]>
+    permission: bigcasares.content.admin
 
 
 permissions:
@@ -132,6 +143,8 @@ permissions:
     default: true
   tideframe.edit:
     default: op
+  bigcasares.sift.models.others:
+    description: Switch The Sift's block models on or off for another player
   bigcasares.donpollos.admin:
     description: Manage Don Pollos (spawn, boss, cities, dances and items)
     default: op
@@ -181,6 +194,9 @@ permissions:
       bigcasares.celular.admin: true
       bigcasares.glider.admin: true
       bigcasares.glider.give: true
+      bigcasares.dimension.admin: true
+      bigcasares.dimension.leave: true
+      bigcasares.content.admin: true
 
   bigcasares.command.timer:
     description: Start a bossbar timer
@@ -383,3 +399,17 @@ permissions:
   bigcasares.danger.view.others:
     description: View other players' danger levels
     default: true
+
+  bigcasares.dimension.admin:
+    description: Inspect dimensions, teleport players and export the dimension datapack
+    default: op
+    children:
+      bigcasares.dimension.leave: true
+
+  bigcasares.dimension.leave:
+    description: Leave a custom dimension with /dimension leave
+    default: op
+
+  bigcasares.content.admin:
+    description: List and give code-defined content items
+    default: op

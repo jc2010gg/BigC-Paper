@@ -50,6 +50,10 @@ dependencies {
     // requires a live RegistryAccess implementation. Paper-specific behavior is
     // exercised by run-paper against the real 26.2 server below.
     testImplementation("org.spigotmc:spigot-api:26.2-R0.1-SNAPSHOT")
+    // Spigot does not ship Adventure, which Paper bundles and the Sift's classes use;
+    // the version follows the Adventure BOM of the paper-api above.
+    testImplementation(platform("net.kyori:adventure-bom:5.2.0"))
+    testImplementation("net.kyori:adventure-api")
     testImplementation("com.github.MilkBowl:VaultAPI:1.7") {
         exclude group: "org.bukkit", module: "bukkit"
     }
@@ -303,6 +307,25 @@ tasks.register("generateResourcePacks", JavaExec) {
     ]
     inputs.dir(layout.projectDirectory.dir("resourcepack"))
     outputs.dir(generatedResourcePackDirectory)
+}
+
+tasks.register("generateCustomBlockstates", JavaExec) {
+    group = "build"
+    description = "Regenerates the mushroom blockstate overrides that render built-in custom blocks."
+    dependsOn(tasks.named("classes"))
+    mainClass = "dev.linqfy.bigCasares.modules.content.CustomBlockstateExportMain"
+    classpath = sourceSets.main.runtimeClasspath + sourceSets.main.compileClasspath
+    args = [layout.projectDirectory.dir("resourcepack").asFile.absolutePath]
+}
+
+tasks.register("generateSiftDatapack", JavaExec) {
+    group = "build"
+    description = "Compiles The Sift dimension (default settings) into build/generated-datapacks for inspection."
+    dependsOn(tasks.named("classes"))
+    mainClass = "dev.linqfy.bigCasares.modules.sift.SiftDatapackExportMain"
+    classpath = sourceSets.main.runtimeClasspath + sourceSets.main.compileClasspath
+    args = [layout.buildDirectory.dir("generated-datapacks").get().asFile.absolutePath]
+    outputs.dir(layout.buildDirectory.dir("generated-datapacks"))
 }
 
 tasks.named("jar") {

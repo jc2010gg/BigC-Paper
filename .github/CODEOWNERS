@@ -1,0 +1,6 @@
+# Require GitHub branch protection to enforce code-owner reviews.
+/AGENTS.md @linqfy
+/GUIDELINES.MD @linqfy
+/README.md @linqfy
+/.github/ @linqfy
+/tools/check_pr_hygiene.py @linqfy
