@@ -2,9 +2,6 @@ package dev.linqfy.bigCasares.modules.tideframe.engine;
 
 import dev.linqfy.bigCasares.modules.tideframe.engine.core.demo.BossFightSettings;
 import dev.linqfy.bigCasares.modules.tideframe.engine.core.demo.KeyChallenge;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -13,12 +10,17 @@ import java.util.Map;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 
-/** Reads config.yml → boss-fight into {@link BossFightSettings}; also adds sections new in this version to old configs. */
+/** Reads the engine settings' boss-fight section ({@link EngineConfig}) into {@link BossFightSettings}. */
 public final class BossFightConfig {
     private BossFightConfig() { }
 
+    /** A YAML file whose top level holds boss-fight (tests and offline tools). */
     public static BossFightSettings load(Path config) {
-        var root = YamlConfiguration.loadConfiguration(config.toFile());
+        return load(YamlConfiguration.loadConfiguration(config.toFile()));
+    }
+
+    /** {@code root}: the engine's settings ({@link EngineConfig#read()}). */
+    public static BossFightSettings load(ConfigurationSection root) {
         var section = root.getConfigurationSection("boss-fight");
         var d = BossFightSettings.defaults();
         if (section == null) return d;
@@ -57,53 +59,5 @@ public final class BossFightConfig {
             out.put(key, section.getBoolean(key));
         }
         return out;
-    }
-
-    /**
-     * Appends every top-level section of the bundled config.yml that the server's config.yml lacks (with its comments),
-     * so owners upgrading from an older version see the new options. Existing values are never touched.
-     */
-    /**
-     * Configs that still carry the untouched pre-0.19 display defaults move to the full-screen sizes.
-     * A value the owner changed is never rewritten.
-     */
-    static boolean upgradeDisplayDefaults(Path config) throws IOException {
-        if (!Files.exists(config)) return false;
-        String text = Files.readString(config, StandardCharsets.UTF_8), updated = text;
-        updated = updated.replace("  sizes: [1, 1.5, 1.75, 2.25, 3.5]\n", "  sizes: [1, 1.75, 2, 2.75]\n");
-        if (!updated.equals(text)) updated = updated.replace("  default-size: 1.75\n", "  default-size: 2\n");
-        // New in 0.19: the cursor size option, right under default-size.
-        if (!updated.contains("cursor-size:")) {
-            var matcher = java.util.regex.Pattern.compile("(?m)^  default-size: .*\\n").matcher(updated);
-            if (matcher.find()) updated = updated.substring(0, matcher.end())
-                    + "  # Mouse cursor size inside menus (0.25 to 1.5 of the original design).\n  cursor-size: 0.4\n" + updated.substring(matcher.end());
-        }
-        if (updated.equals(text)) return false;
-        Files.writeString(config, updated, StandardCharsets.UTF_8);
-        return true;
-    }
-
-    static boolean addMissingSections(Path config, String bundled) throws IOException {
-        if (!Files.exists(config)) return false;
-        var existing = YamlConfiguration.loadConfiguration(config.toFile());
-        var blocks = new LinkedHashMap<String, String>();
-        var comments = new StringBuilder();
-        String current = null; var block = new StringBuilder();
-        for (String line : bundled.split("\n", -1)) {
-            boolean topLevel = !line.isEmpty() && !Character.isWhitespace(line.charAt(0)) && !line.startsWith("#") && line.contains(":");
-            if (topLevel) {
-                if (current != null) blocks.put(current, block.toString());
-                current = line.substring(0, line.indexOf(':')).trim();
-                block = new StringBuilder(comments).append(line).append('\n'); comments.setLength(0);
-            } else if (line.startsWith("#")) comments.append(line).append('\n');
-            else if (current != null) { block.append(comments).append(line).append('\n'); comments.setLength(0); }
-        }
-        if (current != null) blocks.put(current, block.toString());
-        var missing = new StringBuilder();
-        for (var entry : blocks.entrySet()) if (!existing.contains(entry.getKey())) missing.append('\n').append(entry.getValue().stripTrailing()).append('\n');
-        if (missing.isEmpty()) return false;
-        String text = Files.readString(config, StandardCharsets.UTF_8);
-        Files.writeString(config, text + (text.endsWith("\n") ? "" : "\n") + missing, StandardCharsets.UTF_8);
-        return true;
     }
 }

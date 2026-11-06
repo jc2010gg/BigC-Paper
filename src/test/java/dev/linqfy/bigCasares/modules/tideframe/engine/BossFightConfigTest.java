@@ -14,14 +14,13 @@ import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.*;
 
 class BossFightConfigTest {
-    private static String bundled() throws Exception {
-        try (var in = TideframeResources.open("config.yml")) { return new String(in.readAllBytes(), StandardCharsets.UTF_8); }
+    /** The engine section of the config.yml in the JAR, as a server without its own config.yml reads it. */
+    private static org.bukkit.configuration.ConfigurationSection shipped(Path dir) {
+        return new EngineConfig(dir.resolve("config.yml"), () -> BossFightConfigTest.class.getResourceAsStream("/config.yml")).read();
     }
 
-    @Test void bundledConfigDescribesExactlyTheDefaults(@TempDir Path dir) throws Exception {
-        Path config = dir.resolve("config.yml");
-        Files.writeString(config, bundled());
-        assertEquals(BossFightSettings.defaults(), BossFightConfig.load(config));
+    @Test void bundledConfigDescribesExactlyTheDefaults(@TempDir Path dir) {
+        assertEquals(BossFightSettings.defaults(), BossFightConfig.load(shipped(dir)));
     }
 
     @Test void ownersCanRestyleEverythingAndScreensFollow(@TempDir Path dir) throws Exception {
@@ -85,28 +84,38 @@ class BossFightConfigTest {
         assertThrows(IllegalArgumentException.class, () -> new BossFightSettings(d.keys(), 5, 40, 14, 30, 6, 2, Map.of(), Map.of(), Map.of(), Map.of("perfect", "ÉPICO"), Map.of()));
     }
 
-    @Test void menusAreReadOnlyInTheGameByDefaultAndOldConfigsGetThatSetting(@TempDir Path dir) throws Exception {
-        var shipped = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(new java.io.StringReader(bundled()));
-        assertTrue(shipped.contains("editing.in-game"), "the setting is documented in the shipped config");
+    @Test void menusAreReadOnlyInTheGameByDefault(@TempDir Path dir) {
+        var shipped = shipped(dir);
+        assertTrue(shipped.contains("editing.in-game"), "the setting is in the shipped config.yml");
         assertFalse(shipped.getBoolean("editing.in-game", true), "read-only by default");
-        Path config = dir.resolve("config.yml");
-        Files.writeString(config, "pack:\n  port: 9999\n");
-        assertTrue(BossFightConfig.addMissingSections(config, bundled()));
-        var upgraded = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(config.toFile());
-        assertFalse(upgraded.getBoolean("editing.in-game", true), "an old config also becomes read-only");
-        assertTrue(Files.readString(config).contains("MENUS.md"), "with the comment that says where the menus live");
     }
 
-    @Test void oldConfigsGainTheNewSectionsOnceWithoutTouchingValues(@TempDir Path dir) throws Exception {
+    @Test void aServerConfigWithPartOfTheSectionKeepsItsValuesAndReadsTheRestFromTheJar(@TempDir Path dir) throws Exception {
         Path config = dir.resolve("config.yml");
-        Files.writeString(config, "pack:\n  port: 9999\n");
-        assertTrue(BossFightConfig.addMissingSections(config, bundled()));
-        String text = Files.readString(config);
-        assertTrue(text.startsWith("pack:\n  port: 9999\n"));
-        assertTrue(text.contains("boss-fight:") && text.contains("editor:") && text.contains("# Boss fight key prompts"));
-        assertFalse(BossFightConfig.addMissingSections(config, bundled()), "second run adds nothing");
-        assertEquals(BossFightSettings.defaults(), BossFightConfig.load(config));
-        assertEquals(9999, org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(config.toFile()).getInt("pack.port"));
+        Files.writeString(config, "tideframe-ui:\n  missions: true\n  motor:\n    pack:\n      port: 9999\n    boss-fight:\n      lives: 3\n");
+        var engine = new EngineConfig(config, () -> BossFightConfigTest.class.getResourceAsStream("/config.yml"));
+        var read = engine.read();
+        assertEquals(9999, read.getInt("pack.port"));
+        assertEquals("127.0.0.1", read.getString("pack.bind"), "missing options come from the JAR");
+        assertTrue(read.getBoolean("pack.send"));
+        assertFalse(read.getBoolean("editing.in-game", true), "an explicit fallback still gets the JAR's value, not its own");
+        assertEquals(1500, read.getLong("editor.auto-reload-delay-ms", 1));
+        var settings = BossFightConfig.load(read);
+        assertEquals(3, settings.lives());
+        assertEquals(BossFightSettings.defaults().keys(), settings.keys(), "the rest of boss-fight keeps the defaults");
+        assertEquals(BossFightSettings.defaults().text("victory"), settings.text("victory"));
+        assertEquals(PluginSettings.defaults().displaySizes(), PluginSettings.load(read).displaySizes());
+    }
+
+    @Test void onlyChangesToTheEngineSectionChangeItsFingerprint(@TempDir Path dir) throws Exception {
+        Path config = dir.resolve("config.yml");
+        var engine = new EngineConfig(config, () -> BossFightConfigTest.class.getResourceAsStream("/config.yml"));
+        Files.writeString(config, "shop:\n  enabled: true\ntideframe-ui:\n  motor:\n    sounds:\n      volume: 0.6\n");
+        String before = engine.fingerprint();
+        Files.writeString(config, "shop:\n  enabled: false\ntideframe-ui:\n  motor:\n    sounds:\n      volume: 0.6\n");
+        assertEquals(before, engine.fingerprint(), "another module's setting reloads nothing");
+        Files.writeString(config, "shop:\n  enabled: false\ntideframe-ui:\n  motor:\n    sounds:\n      volume: 0.9\n");
+        assertNotEquals(before, engine.fingerprint());
     }
 
     @Test void singleKeyFightsStillWork() {
@@ -120,33 +129,5 @@ class BossFightConfigTest {
         assertEquals(KeyChallenge.Key.CLICK, game.current());
         assertEquals(KeyChallenge.WIDE_SCREEN, game.frameId());
         assertTrue(BossFightScreens.build(d).values().stream().flatMap(s -> s.elements().stream()).anyMatch(LiveText::isBar));
-    }
-
-    @Test void untouchedOldDisplayDefaultsMoveToFullScreenSizes(@TempDir Path dir) throws Exception {
-        Path config = dir.resolve("config.yml");
-        Files.writeString(config, "display:\n  sizes: [1, 1.5, 1.75, 2.25, 3.5]\n  # Size for players who have not chosen one yet.\n  default-size: 1.75\nsounds:\n  enabled: true\n");
-        assertTrue(BossFightConfig.upgradeDisplayDefaults(config));
-        var yaml = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(config.toFile());
-        assertEquals(List.of(1, 1.75, 2, 2.75), yaml.getList("display.sizes").stream().map(v -> ((Number) v).doubleValue() == Math.rint(((Number) v).doubleValue()) ? (Object) ((Number) v).intValue() : v).toList());
-        assertEquals(2, yaml.getInt("display.default-size"));
-        assertEquals(.4, yaml.getDouble("display.cursor-size"), 1e-9);
-        assertFalse(BossFightConfig.upgradeDisplayDefaults(config), "idempotent");
-        // An owner's own choice is never rewritten (only the cursor option is added).
-        Files.writeString(config, "display:\n  sizes: [1, 2.25]\n  default-size: 2.25\n");
-        assertTrue(BossFightConfig.upgradeDisplayDefaults(config));
-        String text = Files.readString(config);
-        assertTrue(text.contains("sizes: [1, 2.25]") && text.contains("default-size: 2.25") && text.contains("cursor-size: 0.4"));
-    }
-
-    @Test void theOwnersPre013ConfigGainsEveryNewSection(@TempDir Path dir) throws Exception {
-        Path config = dir.resolve("config.yml");
-        Files.writeString(config, "pack:\n  bind: 127.0.0.1\n  port: 8140\n  public-url: http://127.0.0.1:8140/packs/\n  required: false\ncursor:\n  distance: 2.5\nlimits:\n  elements: 128\n");
-        assertTrue(BossFightConfig.addMissingSections(config, bundled()));
-        var yaml = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(config.toFile());
-        assertEquals(8140, yaml.getInt("pack.port"));
-        assertEquals(2, yaml.getInt("display.default-size"));
-        assertEquals(.4, yaml.getDouble("display.cursor-size"), 1e-9);
-        assertTrue(yaml.getBoolean("editor.auto-reload"));
-        assertEquals(BossFightSettings.defaults(), BossFightConfig.load(config));
     }
 }

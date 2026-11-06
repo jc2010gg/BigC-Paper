@@ -20,10 +20,10 @@ class OpenTriggersTest {
         assertFalse(triggers.any()); assertEquals(List.of(), warnings);
         assertSame(OpenTriggers.NONE, OpenTriggers.parse(null, warnings::add), "configs without the section");
         var bundled = new YamlConfiguration();
-        try (var in = TideframeResources.open("config.yml")) {
+        try (var in = OpenTriggersTest.class.getResourceAsStream("/config.yml")) {
             bundled.loadFromString(new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
         }
-        assertFalse(OpenTriggers.parse(bundled.getConfigurationSection("open"), warnings::add).any(), "the shipped config.yml opens nothing by itself");
+        assertFalse(OpenTriggers.parse(bundled.getConfigurationSection(EngineConfig.PATH + ".open"), warnings::add).any(), "the shipped config.yml opens nothing by itself");
     }
 
     @Test void keysItemsZonesAndSignsAreReadAndBadEntriesAreReported() throws Exception {

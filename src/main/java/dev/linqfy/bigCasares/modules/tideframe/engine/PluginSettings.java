@@ -1,9 +1,7 @@
 package dev.linqfy.bigCasares.modules.tideframe.engine;
 
 import java.net.URI;
-import java.nio.file.*;
-import java.io.*;
-import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.configuration.ConfigurationSection;
 
 public record PluginSettings(String bind, int port, String publicUrl, boolean required,
                              double distance, int predictionMs, double snapRadius, int elements,
@@ -29,11 +27,8 @@ public record PluginSettings(String bind, int port, String publicUrl, boolean re
             throw new IllegalArgumentException("Invalid Tideframe configuration");
     }
     public static PluginSettings defaults() { return new PluginSettings("127.0.0.1",8136,"http://127.0.0.1:8136/packs/",false,2.5,35,.08,128); }
-    public static PluginSettings load(Path directory, InputStream defaults) throws IOException {
-        Files.createDirectories(directory);
-        Path file = directory.resolve("config.yml");
-        if (!Files.exists(file)) Files.copy(defaults, file);
-        var y = YamlConfiguration.loadConfiguration(file.toFile());
+    /** {@code y}: the engine's settings ({@link EngineConfig#read()}). */
+    public static PluginSettings load(ConfigurationSection y) {
         var d = defaults();
         var sizes=new java.util.ArrayList<Integer>();
         if(y.isList("display.sizes")) for(Object value:y.getList("display.sizes"))

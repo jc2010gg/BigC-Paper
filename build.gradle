@@ -346,9 +346,12 @@ tasks.register('verifyEmbeddedTideframe') {
         def archive = tasks.named('jar').get().archiveFile.get().asFile
         new java.util.zip.ZipFile(archive).withCloseable { zip ->
             ['dev/linqfy/bigCasares/modules/tideframe/engine/TideframeEngine.class', 'dev/linqfy/bigCasares/modules/tideframe/engine/TideframeApi.class',
-             'tideframe/engine/config.yml', 'tideframe/engine/boss-face.png',
+             'tideframe/engine/boss-face.png',
              'tideframe/engine/item-icons.tsv', 'META-INF/tideframe/LICENSE'].each { path ->
                 if (zip.getEntry(path) == null) throw new GradleException("Missing embedded Tideframe resource: ${path}")
+            }
+            if (zip.getEntry('tideframe/engine/config.yml') != null) {
+                throw new GradleException('The engine settings belong in config.yml (tideframe-ui.motor), not in a config file of its own')
             }
             def entries = zip.entries().toList()*.name
             if (entries.findAll { it.endsWith('plugin.yml') } != ['plugin.yml']) {

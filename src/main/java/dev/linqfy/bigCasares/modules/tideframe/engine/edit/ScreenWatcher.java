@@ -19,6 +19,7 @@ public final class ScreenWatcher implements AutoCloseable {
     private final String glob;
     private final PathMatcher matcher;
     private final long debounceMillis;
+    private final Supplier<String> currentFingerprint;
     private final Supplier<String> builtFingerprint;
     private final Consumer<String> onChange;
     private final WatchService service;
@@ -30,8 +31,17 @@ public final class ScreenWatcher implements AutoCloseable {
     }
     /** Watch only the files matching {@code glob} (for example "config.yml"). */
     public ScreenWatcher(Path folder, String glob, long debounceMillis, Supplier<String> builtFingerprint, Consumer<String> onChange) throws IOException {
+        this(folder, glob, debounceMillis, null, builtFingerprint, onChange);
+    }
+    /**
+     * Watch the files matching {@code glob}, but compare {@code currentFingerprint} (for example the digest of one
+     * section of a file) instead of the files' names, sizes and times.
+     */
+    public ScreenWatcher(Path folder, String glob, long debounceMillis, Supplier<String> currentFingerprint, Supplier<String> builtFingerprint,
+                         Consumer<String> onChange) throws IOException {
         this.folder = folder.toAbsolutePath().normalize();
         this.glob = glob;
+        this.currentFingerprint = currentFingerprint != null ? currentFingerprint : () -> fingerprint(this.folder, glob);
         this.matcher = this.folder.getFileSystem().getPathMatcher("glob:" + glob);
         this.debounceMillis = debounceMillis;
         this.builtFingerprint = Objects.requireNonNull(builtFingerprint);
@@ -85,7 +95,7 @@ public final class ScreenWatcher implements AutoCloseable {
                     if (more == null) break;
                     relevant(more);
                 }
-                String now = fingerprint(folder, glob);
+                String now = currentFingerprint.get();
                 if (running && !now.equals(builtFingerprint.get())) onChange.accept(now);
             }
         } catch (InterruptedException | ClosedWatchServiceException stopped) {

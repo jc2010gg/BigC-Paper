@@ -1,5 +1,6 @@
 package dev.linqfy.bigCasares.modules.tideframe;
 
+import dev.linqfy.bigCasares.modules.tideframe.engine.EngineConfig;
 import dev.linqfy.bigCasares.modules.tideframe.engine.TideframeEngine;
 import dev.linqfy.bigCasares.modules.tideframe.engine.TideframeApi;
 import dev.linqfy.bigCasares.BigCasares;
@@ -9,10 +10,13 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 class TideframeEmbeddedRuntimeTest {
     @Test
@@ -21,11 +25,22 @@ class TideframeEmbeddedRuntimeTest {
     }
 
     @Test
-    void engineConfigurationAndArtAreBundledWithoutReplacingBigCasaresConfiguration() {
-        assertNotNull(getClass().getResource("/tideframe/engine/config.yml"));
+    void engineSettingsLiveInBigCasaresConfigAndItsArtIsBundled() throws Exception {
+        assertNull(getClass().getResource("/tideframe/engine/config.yml"), "no config file of its own");
         assertNotNull(getClass().getResource("/tideframe/engine/boss-face.png"));
         assertNotNull(getClass().getResource("/tideframe/engine/item-icons.tsv"));
-        assertNotNull(getClass().getResource("/config.yml"));
+        try (var input = getClass().getResourceAsStream("/config.yml")) {
+            assertNotNull(input);
+            var config = YamlConfiguration.loadConfiguration(new InputStreamReader(input, StandardCharsets.UTF_8));
+            var engine = config.getConfigurationSection(EngineConfig.PATH);
+            assertNotNull(engine, "config.yml has the engine section");
+            for (String section : List.of("pack", "display", "sounds", "editor", "cursor", "limits", "demos", "editing",
+                "experimental", "actions", "variables", "open", "hud", "boss-bar", "boss-fight")) {
+                assertTrue(engine.isConfigurationSection(section), "tideframe-ui.motor." + section);
+            }
+            assertTrue(engine.getBoolean("pack.send"));
+            assertTrue(config.getBoolean("tideframe-ui.missions") && config.getBoolean("tideframe-ui.shop"));
+        }
     }
 
     @Test

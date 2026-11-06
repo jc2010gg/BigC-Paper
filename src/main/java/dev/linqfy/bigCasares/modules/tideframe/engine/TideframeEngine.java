@@ -31,9 +31,13 @@ public final class TideframeEngine implements Listener,TideframeApi {
         new dev.linqfy.bigCasares.module.runtime.RuntimeRegistrationScope();
     private final dev.linqfy.bigCasares.module.runtime.BukkitRuntimeRegistrations registrations;
 
+    /** The engine's settings: config.yml of BigCasares, section tideframe-ui.motor. */
+    private final EngineConfig engineConfig;
+
     public TideframeEngine(JavaPlugin host) {
         this.host = Objects.requireNonNull(host);
         this.registrations = new dev.linqfy.bigCasares.module.runtime.BukkitRuntimeRegistrations(host, scope);
+        this.engineConfig = new EngineConfig(host.getDataFolder().toPath().resolve("config.yml"), () -> host.getResource("config.yml"));
     }
 
     public java.io.File getDataFolder() { return new java.io.File(host.getDataFolder(), "tideframe/engine"); }
@@ -111,7 +115,7 @@ public final class TideframeEngine implements Listener,TideframeApi {
         event->getServer().getPluginManager().callEvent(event),()->this.bossFight));
     /** config.yml → display.cursor-size (0.25-1.5 of the original cursor; default 0.4). */
     private double cursorScale(){
-        var config=org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(getDataFolder().toPath().resolve("config.yml").toFile());
+        var config=engineConfig.read();
         double value=config.getDouble("display.cursor-size",HudAssets.DEFAULT_CURSOR_SCALE);
         if(!(value>=.25&&value<=1.5)){getLogger().warning("display.cursor-size must be 0.25 to 1.5; using "+HudAssets.DEFAULT_CURSOR_SCALE);return HudAssets.DEFAULT_CURSOR_SCALE;}
         return value;
@@ -119,17 +123,14 @@ public final class TideframeEngine implements Listener,TideframeApi {
     /** config.yml → boss-fight (validated); the built-in look when absent or invalid. */
     private volatile dev.linqfy.bigCasares.modules.tideframe.engine.core.demo.BossFightSettings bossFight=dev.linqfy.bigCasares.modules.tideframe.engine.core.demo.BossFightSettings.defaults();
     private void loadBossFight(){
-        try{bossFight=BossFightConfig.load(getDataFolder().toPath().resolve("config.yml"));}
+        try{bossFight=BossFightConfig.load(engineConfig.read());}
         catch(IllegalArgumentException invalid){bossFight=dev.linqfy.bigCasares.modules.tideframe.engine.core.demo.BossFightSettings.defaults();getLogger().warning(invalid.getMessage()+"; using the default boss fight look.");}
     }
-    /** Old configs get the sections added since (with comments); existing values stay untouched. */
-    private void migrateConfig(){
-        try(var bundled=getResource("config.yml")){
-            if(bundled!=null&&BossFightConfig.addMissingSections(getDataFolder().toPath().resolve("config.yml"),new String(bundled.readAllBytes(),java.nio.charset.StandardCharsets.UTF_8)))
-                getLogger().info("Added the new options of this version to config.yml.");
-            if(BossFightConfig.upgradeDisplayDefaults(getDataFolder().toPath().resolve("config.yml")))
-                getLogger().info("Menu sizes moved to the full-screen defaults (1, 1.75, 2, 2.75).");
-        }catch(java.io.IOException unwritable){getLogger().warning("Could not add new options to config.yml: "+unwritable.getMessage());}
+    /** The engine once kept its own config.yml in its folder; it is no longer read, and is left as it is. */
+    private void reportOldConfig(){
+        if(java.nio.file.Files.isRegularFile(getDataFolder().toPath().resolve("config.yml")))
+            getLogger().warning("plugins/BigCasares/tideframe/engine/config.yml is no longer read: the engine settings are in config.yml, section "
+                +EngineConfig.PATH+". Copy any value you changed there; the old file can be deleted.");
     }
     private BossChallenges challenges(){return challenges;}
     private void gameSound(Player player,String sound,float pitch){
@@ -196,11 +197,10 @@ public final class TideframeEngine implements Listener,TideframeApi {
         boolean preciseKeys=keyInput.register(host);
         getLogger().info("TIDEFRAME_KEY_INPUT "+(preciseKeys?"native":"movement-fallback"));
         io.execute(() -> {
-            try (var defaults = getResource("config.yml")) {
-                // Upgrade an existing config first (new sections, untouched old defaults), then read it.
-                migrateConfig();
-                settings = PluginSettings.load(getDataFolder().toPath(),defaults);
-                try {sounds=SoundSettings.load(getDataFolder().toPath().resolve("config.yml"));}
+            try {
+                reportOldConfig();
+                settings = PluginSettings.load(engineConfig.read());
+                try {sounds=SoundSettings.load(engineConfig.read());}
                 catch(IllegalArgumentException invalid){getLogger().warning(invalid.getMessage()+"; using default sounds.");}
                 loadBossFight();
                 store=new ScreenStore(getDataFolder().toPath().resolve("screens"));
@@ -220,7 +220,7 @@ public final class TideframeEngine implements Listener,TideframeApi {
                         + " folia=" + PlatformProbe.folia() + " java=" + java.lang.Runtime.version().feature());
                     getLogger().info("TIDEFRAME_RUNTIME_READY screens="+screens.size()+" schema="+ScreenCodec.LATEST+" api=true passive=true selfInput="+CameraPackets.available()
                         +" cursorFastPath="+CameraPackets.rotationFastPath()+" keys="+CameraPackets.keysAvailable()+" dialogs="+logic.dialogsAvailable()+" packBytes="+packBytes+" demoGames="+demoGames);
-                    if(demoGames&&packBytes>50L*1024*1024)getLogger().info("The demo games are most of the "+packBytes/1048576+" MiB resource pack; set demos.games: false in config.yml for a pack of a few MiB.");
+                    if(demoGames&&packBytes>50L*1024*1024)getLogger().info("The demo games are most of the "+packBytes/1048576+" MiB resource pack; set tideframe-ui.motor.demos.games: false in config.yml for a pack of a few MiB.");
                     registerScreenCommands();
                     reportModel();
                     for (var player:Bukkit.getOnlinePlayers()) scheduler.entity(player,() -> {restoreDisplay(player);offer(player);});
@@ -247,15 +247,16 @@ public final class TideframeEngine implements Listener,TideframeApi {
     private void startWatcher(){
         synchronized (lifecycle) {
         if (stopping) return;
-        var config=org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(getDataFolder().toPath().resolve("config.yml").toFile());
+        var config=engineConfig.read();
         if(!config.getBoolean("editor.auto-reload",true))return;
         try {
             watcher=registrations.ownCloseable("engine-screens-watcher", new dev.linqfy.bigCasares.modules.tideframe.engine.edit.ScreenWatcher(screensFolder(),config.getLong("editor.auto-reload-delay-ms",1500),()->builtFingerprint,
                 changed->scheduler.global(this::autoReload)));
-            // Saving config.yml (boss fight look, sizes, sounds) applies it too.
-            configWatcher=registrations.ownCloseable("engine-config-watcher", new dev.linqfy.bigCasares.modules.tideframe.engine.edit.ScreenWatcher(getDataFolder().toPath(),"config.yml",config.getLong("editor.auto-reload-delay-ms",1500),
-                ()->builtConfigFingerprint,changed->scheduler.global(this::autoReload)));
-            getLogger().info("TIDEFRAME_AUTO_RELOAD watching="+screensFolder()+" and config.yml");
+            // Saving BigCasares' config.yml applies the engine section (boss fight look, sizes, sounds) too; edits to
+            // other sections leave its fingerprint as it was and reload nothing.
+            configWatcher=registrations.ownCloseable("engine-config-watcher", new dev.linqfy.bigCasares.modules.tideframe.engine.edit.ScreenWatcher(host.getDataFolder().toPath(),"config.yml",config.getLong("editor.auto-reload-delay-ms",1500),
+                engineConfig::fingerprint,()->builtConfigFingerprint,changed->scheduler.global(this::autoReload)));
+            getLogger().info("TIDEFRAME_AUTO_RELOAD watching="+screensFolder()+" and config.yml ("+EngineConfig.PATH+")");
         } catch(java.io.IOException unavailable){getLogger().warning("Auto-reload is unavailable: "+unavailable.getMessage());}
         }
     }
@@ -333,8 +334,8 @@ public final class TideframeEngine implements Listener,TideframeApi {
         // (players would download the same pack twice), unless an API call is waiting for one.
         boolean waiting;synchronized(reloadWaiters){waiting=!reloadWaiters.isEmpty();}
         if(!waiting&&dev.linqfy.bigCasares.modules.tideframe.engine.edit.ScreenWatcher.fingerprint(screensFolder()).equals(builtFingerprint)
-                &&dev.linqfy.bigCasares.modules.tideframe.engine.edit.ScreenWatcher.fingerprint(getDataFolder().toPath(),"config.yml").equals(builtConfigFingerprint))return;
-        getLogger().info("Screens or config.yml changed; reloading automatically.");
+                &&engineConfig.fingerprint().equals(builtConfigFingerprint))return;
+        getLogger().info("Screens or the tideframe-ui.motor settings changed; reloading automatically.");
         reload(Bukkit.getConsoleSender());
     }
     /** Worker thread only: parse/validate screens, bake HUD assets and generate the pack. Touches no live state. */
@@ -346,7 +347,7 @@ public final class TideframeEngine implements Listener,TideframeApi {
         }
         // Taken before reading: a file saved during the build makes the fingerprints differ and reloads again.
         String fingerprint=dev.linqfy.bigCasares.modules.tideframe.engine.edit.ScreenWatcher.fingerprint(screensFolder());
-        String configFingerprint=dev.linqfy.bigCasares.modules.tideframe.engine.edit.ScreenWatcher.fingerprint(getDataFolder().toPath(),"config.yml");
+        String configFingerprint=engineConfig.fingerprint();
         // Each file's time, taken before reading it: the editor's Publish waits for the time of its own file (EditorBridge).
         var stamps=new TreeMap<String,Long>();
         for(String id:store.ids()){stamps.put(id,store.stamp(id));fresh.put(id,store.load(id));}
@@ -354,7 +355,7 @@ public final class TideframeEngine implements Listener,TideframeApi {
         // Boss prompts follow config.yml (colours, layout, texts) unless a screen JSON with the same id replaces them.
         dev.linqfy.bigCasares.modules.tideframe.engine.core.demo.BossFightScreens.build(bossFight).forEach(fresh::putIfAbsent);
         // The demo games are most of the pack (about 95 MB at the default sizes); servers can leave them out.
-        boolean games=org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(getDataFolder().toPath().resolve("config.yml").toFile()).getBoolean("demos.games",true);
+        boolean games=engineConfig.read().getBoolean("demos.games",true);
         demoGames=games;
         if(games)RuntimeDemoCatalog.screens().forEach((id,demo)->fresh.putIfAbsent(id,demoPresentation(demo)));
         fresh.putIfAbsent("visual_menu09",VisualMenuCatalog.screen());
@@ -363,7 +364,7 @@ public final class TideframeEngine implements Listener,TideframeApi {
         // The blur demo's full-screen photograph weighs about 14 MB of pack: it belongs with the demo games.
         if(games){fresh.putIfAbsent(dev.linqfy.bigCasares.modules.tideframe.engine.core.demo.MediaDemo.ID,dev.linqfy.bigCasares.modules.tideframe.engine.core.demo.MediaDemo.screen());copyDemoGif();}
         // experimental.mannequin-test: the 3D model proof of concept; its menu exists only with the option on.
-        boolean models=org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(getDataFolder().toPath().resolve("config.yml").toFile()).getBoolean("experimental.mannequin-test",false);
+        boolean models=engineConfig.read().getBoolean("experimental.mannequin-test",false);
         modelTest=models;
         if(models)fresh.putIfAbsent(dev.linqfy.bigCasares.modules.tideframe.engine.core.demo.ModelDemo.ID,dev.linqfy.bigCasares.modules.tideframe.engine.core.demo.ModelDemo.screen());
         boolean builtIn=Screen.demos().get("menu").equals(fresh.get("menu"));
@@ -375,7 +376,7 @@ public final class TideframeEngine implements Listener,TideframeApi {
         for(var screen:fresh.values())for(String problem:screen.logicProblems()){getLogger().warning("Screen "+screen.id()+": "+problem);problems.computeIfAbsent(screen.id(),k->new ArrayList<>()).add(problem);}
         var frameSet=frameImages(fresh.values());
         // display.auto-fit: the pack carries a text shader that fits menus to the window (opt-in; needs a server that can switch the glyph shadow off).
-        boolean wantsAutoFit=org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(getDataFolder().toPath().resolve("config.yml").toFile()).getBoolean("display.auto-fit",false);
+        boolean wantsAutoFit=engineConfig.read().getBoolean("display.auto-fit",false);
         boolean autoFit=wantsAutoFit&&Shadow.available();
         if(wantsAutoFit&&!autoFit)getLogger().warning("display.auto-fit needs a server with text shadow components (Minecraft 26.x); it stays off.");
         if(autoFit)getLogger().info("TIDEFRAME_AUTO_FIT on reference="+HudAssets.REFERENCE_QUARTERS+"q: the pack carries the text shader; menus and HUD pages fit the window by themselves.");
@@ -397,8 +398,8 @@ public final class TideframeEngine implements Listener,TideframeApi {
         for(String problem:sounds.problems())getLogger().warning(problem);
         if(!sounds.sounds().isEmpty())getLogger().info("TIDEFRAME_SOUNDS "+sounds.sounds().stream().map(dev.linqfy.bigCasares.modules.tideframe.engine.pack.CustomSounds.Sound::id).toList());
         // config.yml boss-bar.style: the boss bar frame design baked into the pack.
-        String bossStyle=org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(getDataFolder().toPath().resolve("config.yml").toFile()).getString("boss-bar.style","rose");
-        if(!dev.linqfy.bigCasares.modules.tideframe.engine.pack.BossBarAssets.STYLES.contains(bossStyle)){getLogger().warning("config.yml boss-bar.style must be one of "+dev.linqfy.bigCasares.modules.tideframe.engine.pack.BossBarAssets.STYLES+"; using rose.");bossStyle="rose";}
+        String bossStyle=engineConfig.read().getString("boss-bar.style","rose");
+        if(!dev.linqfy.bigCasares.modules.tideframe.engine.pack.BossBarAssets.STYLES.contains(bossStyle)){getLogger().warning("config.yml tideframe-ui.motor.boss-bar.style must be one of "+dev.linqfy.bigCasares.modules.tideframe.engine.pack.BossBarAssets.STYLES+"; using rose.");bossStyle="rose";}
         var freshPack=PackGenerator.generate(getDataFolder().toPath().resolve("packs"),freshImages,freshHud,bossPortrait,sounds.sounds(),bossStyle);
         exportPack(freshPack.path());
         return new Runtime(fresh,freshImages,freshHud,freshPack,java.nio.file.Files.size(freshPack.path()),builtIn,fingerprint,configFingerprint,Map.copyOf(problems),Map.copyOf(stamps));
@@ -437,19 +438,19 @@ public final class TideframeEngine implements Listener,TideframeApi {
     /** config.yml editing.in-game: false (the default) keeps menus read-only in the game; they change by editing their files. */
     private volatile boolean inGameEditing;
     private void loadActionSettings(){
-        var config=org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(getDataFolder().toPath().resolve("config.yml").toFile());
+        var config=engineConfig.read();
         inGameEditing=config.getBoolean("editing.in-game",false);
         var savedNames=config.getStringList("variables.saved");
-        for(String bad:SavedVariables.invalid(savedNames))getLogger().warning("config.yml variables.saved: '"+bad+"' is not a variable name (a-z, 0-9 and _, up to 24 characters); ignored.");
+        for(String bad:SavedVariables.invalid(savedNames))getLogger().warning("config.yml tideframe-ui.motor.variables.saved: '"+bad+"' is not a variable name (a-z, 0-9 and _, up to 24 characters); ignored.");
         logic.saveVariables(new SavedVariables(savedNames));
-        openTriggers=OpenTriggers.parse(config.getConfigurationSection("open"),problem->getLogger().warning("config.yml "+problem));
+        openTriggers=OpenTriggers.parse(config.getConfigurationSection("open"),problem->getLogger().warning("config.yml tideframe-ui.motor: "+problem));
         var huds=new java.util.LinkedHashMap<String,List<String>>();
         var worldsSection=config.getConfigurationSection("hud.worlds");
         if(worldsSection!=null)for(String world:worldsSection.getKeys(false)){
             var ids=new ArrayList<String>();
             for(String id:worldsSection.getStringList(world)){
                 if(id.matches("[a-z][a-z0-9_-]{0,31}"))ids.add(id);
-                else getLogger().warning("config.yml hud.worlds."+world+": '"+id+"' is not a screen id; ignored.");
+                else getLogger().warning("config.yml tideframe-ui.motor.hud.worlds."+world+": '"+id+"' is not a screen id; ignored.");
             }
             if(!ids.isEmpty())huds.put(world,List.copyOf(ids));
         }
@@ -662,14 +663,13 @@ public final class TideframeEngine implements Listener,TideframeApi {
         try { io.execute(()->{
             List<java.util.concurrent.CompletableFuture<Void>> waiters;
             synchronized(reloadWaiters){waiters=List.copyOf(reloadWaiters);reloadWaiters.clear();}
-            try (var defaults=getResource("config.yml")) {
+            try {
                 var previous=settings;
-                migrateConfig();
-                var loaded=PluginSettings.load(getDataFolder().toPath(),defaults);
+                var loaded=PluginSettings.load(engineConfig.read());
                 // The pack server keeps its address until restart; everything else applies now.
                 settings=new PluginSettings(previous.bind(),previous.port(),previous.publicUrl(),loaded.required(),loaded.distance(),
                     loaded.predictionMs(),loaded.snapRadius(),loaded.elements(),loaded.displaySizes(),loaded.defaultSize());
-                try {sounds=SoundSettings.load(getDataFolder().toPath().resolve("config.yml"));}catch(IllegalArgumentException invalid){getLogger().warning(invalid.getMessage());}
+                try {sounds=SoundSettings.load(engineConfig.read());}catch(IllegalArgumentException invalid){getLogger().warning(invalid.getMessage());}
                 loadBossFight();
                 var built=buildRuntime();
                 var service=new PackService(new InetSocketAddress(settings.bind(),settings.port()),packHttp);
@@ -757,7 +757,7 @@ public final class TideframeEngine implements Listener,TideframeApi {
             }
             else if (arg.equals("hud")) toggleHud(player);
             else if(arg.equals("modeltest")){
-                if(!modelTest){player.sendMessage("The 3D model test is off (config.yml → experimental.mannequin-test).");return;}
+                if(!modelTest){player.sendMessage("The 3D model test is off (config.yml → tideframe-ui.motor.experimental.mannequin-test).");return;}
                 if(bedrock.isBedrock(player.getUniqueId())){player.sendMessage("The 3D model test needs Minecraft Java 26.2.");return;}
                 boolean spin=false;String profile=null;
                 for(int i=1;i<args.length;i++){
@@ -791,7 +791,7 @@ public final class TideframeEngine implements Listener,TideframeApi {
                 var items=openTriggers.items;
                 String id=args.length==2?args[1].toLowerCase(Locale.ROOT):items.size()==1?items.keySet().iterator().next():null;
                 var item=id==null?null:items.get(id);
-                if(item==null){player.sendMessage(items.isEmpty()?"No menu items are set up (config.yml → open.items).":"Use /tideframe item "+String.join("|",items.keySet()));return;}
+                if(item==null){player.sendMessage(items.isEmpty()?"No menu items are set up (config.yml → tideframe-ui.motor.open.items).":"Use /tideframe item "+String.join("|",items.keySet()));return;}
                 if(giveOpenItem(player,item))player.sendMessage("Right click with this item to open "+id+".");
             }
             else if(arg.equals("boss")){
@@ -826,7 +826,7 @@ public final class TideframeEngine implements Listener,TideframeApi {
     private volatile boolean sendPack=true;
     /** Worker thread: copies the pack's assets into every pack.export-to folder (for ItemsAdder, Nexo, Oraxen or a CDN). */
     private void exportPack(java.nio.file.Path zip){
-        var config=org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(getDataFolder().toPath().resolve("config.yml").toFile());
+        var config=engineConfig.read();
         sendPack=config.getBoolean("pack.send",true);
         var server=host.getDataFolder().toPath().toAbsolutePath().normalize().getParent().getParent();
         for(String raw:config.getStringList("pack.export-to")){
@@ -866,7 +866,7 @@ public final class TideframeEngine implements Listener,TideframeApi {
         if(id.startsWith("challenge_")){startChallenge(player);return;}
         Screen screen=screens.get(id);
         if (screen==null && !demoGames && (id.equals("sequence_demo")||id.equals("overlay_demo")||id.equals("image_demo08")||id.startsWith("spin_")||id.startsWith("seq_")||id.startsWith("win_")||id.equals("roulette_demo"))) {
-            player.sendMessage("The demo games are turned off on this server (config.yml → demos.games).");return;
+            player.sendMessage("The demo games are turned off on this server (config.yml → tideframe-ui.motor.demos.games).");return;
         }
         if (screen==null || screen.elements().size()>settings.elements()) { player.sendMessage("Unknown screen or element limit exceeded.");return; }
         String required=screen.logic().permission();
@@ -1173,7 +1173,7 @@ public final class TideframeEngine implements Listener,TideframeApi {
     }
     private boolean giveOpenItem(Player player,OpenTriggers.Item item) {
         Material material=Material.matchMaterial(item.material());
-        if(material==null||!material.isItem()||material.isAir()){getLogger().warning("config.yml open.items."+item.screen()+": unknown material "+item.material());return false;}
+        if(material==null||!material.isItem()||material.isAir()){getLogger().warning("config.yml tideframe-ui.motor.open.items."+item.screen()+": unknown material "+item.material());return false;}
         var stack=new org.bukkit.inventory.ItemStack(material);
         var meta=stack.getItemMeta();
         if(!item.name().isBlank())meta.displayName(TextFormat.parse(item.name()).decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC,false));
