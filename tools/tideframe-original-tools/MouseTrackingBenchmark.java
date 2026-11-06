@@ -1,6 +1,6 @@
-import dev.tideframe.core.HitTester;
-import dev.tideframe.core.PlaneProjection;
-import dev.tideframe.core.ScreenCursorInteraction;
+import dev.linqfy.bigCasares.modules.tideframe.engine.core.HitTester;
+import dev.linqfy.bigCasares.modules.tideframe.engine.core.PlaneProjection;
+import dev.linqfy.bigCasares.modules.tideframe.engine.core.ScreenCursorInteraction;
 import java.lang.management.ManagementFactory;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;

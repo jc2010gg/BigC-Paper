@@ -1,5 +1,5 @@
-import dev.tideframe.core.LiveText;
-import dev.tideframe.pack.Glyphs;
+import dev.linqfy.bigCasares.modules.tideframe.engine.core.LiveText;
+import dev.linqfy.bigCasares.modules.tideframe.engine.pack.Glyphs;
 import java.nio.file.Files;
 import java.nio.file.Path;
 

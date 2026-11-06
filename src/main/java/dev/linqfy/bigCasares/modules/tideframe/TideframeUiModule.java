@@ -4,7 +4,7 @@ import dev.linqfy.bigCasares.module.PluginModule;
 import dev.linqfy.bigCasares.module.runtime.BukkitRuntimeRegistrations;
 import dev.linqfy.bigCasares.module.runtime.RuntimeRegistrationScope;
 import dev.linqfy.bigCasares.platform.ClientPlatformGateway;
-import dev.tideframe.TideframePlugin;
+import dev.linqfy.bigCasares.modules.tideframe.engine.TideframeEngine;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -29,7 +29,7 @@ public final class TideframeUiModule implements PluginModule {
     private boolean missions = true;
     private boolean shop = true;
     private RuntimeRegistrationScope compatibilityScope;
-    private TideframePlugin runtime;
+    private TideframeEngine runtime;
     private TideframeUiService service;
 
     public TideframeUiModule(JavaPlugin plugin, ClientPlatformGateway platforms) {
@@ -53,7 +53,7 @@ public final class TideframeUiModule implements PluginModule {
             throw new IllegalStateException("Tideframe ya esta integrado en BigCasares: retirale el JAR independiente para evitar packs y comandos duplicados.");
         }
         installScreens();
-        TideframePlugin engine = new TideframePlugin(plugin);
+        TideframeEngine engine = new TideframeEngine(plugin);
         runtime = engine;
         scope.register("tideframe-engine", this::stopRuntime);
         TideframeUiService connected = new TideframeUiService(new TideframeApiBridge(engine), platforms,
@@ -98,7 +98,7 @@ public final class TideframeUiModule implements PluginModule {
     private void stopRuntime() {
         ui = TideframeUi.NONE;
         service = null;
-        TideframePlugin engine = runtime;
+        TideframeEngine engine = runtime;
         runtime = null;
         if (engine != null) engine.close();
     }

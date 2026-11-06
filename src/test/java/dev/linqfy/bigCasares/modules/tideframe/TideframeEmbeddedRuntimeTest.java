@@ -1,7 +1,7 @@
 package dev.linqfy.bigCasares.modules.tideframe;
 
-import dev.tideframe.TideframePlugin;
-import dev.tideframe.TideframeApi;
+import dev.linqfy.bigCasares.modules.tideframe.engine.TideframeEngine;
+import dev.linqfy.bigCasares.modules.tideframe.engine.TideframeApi;
 import dev.linqfy.bigCasares.BigCasares;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -17,7 +17,7 @@ import java.nio.charset.StandardCharsets;
 class TideframeEmbeddedRuntimeTest {
     @Test
     void engineIsOwnedByBigCasaresNotASecondJavaPlugin() {
-        assertFalse(JavaPlugin.class.isAssignableFrom(TideframePlugin.class));
+        assertFalse(JavaPlugin.class.isAssignableFrom(TideframeEngine.class));
     }
 
     @Test

@@ -1,8 +1,8 @@
-import dev.tideframe.core.CloseControl;
-import dev.tideframe.core.Screen;
-import dev.tideframe.core.demo.RuntimeDemoCatalog;
-import dev.tideframe.edit.ScreenCodec;
-import dev.tideframe.pack.HudRaster;
+import dev.linqfy.bigCasares.modules.tideframe.engine.core.CloseControl;
+import dev.linqfy.bigCasares.modules.tideframe.engine.core.Screen;
+import dev.linqfy.bigCasares.modules.tideframe.engine.core.demo.RuntimeDemoCatalog;
+import dev.linqfy.bigCasares.modules.tideframe.engine.edit.ScreenCodec;
+import dev.linqfy.bigCasares.modules.tideframe.engine.pack.HudRaster;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.nio.charset.StandardCharsets;

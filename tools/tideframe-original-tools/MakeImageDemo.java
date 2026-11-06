@@ -1,6 +1,6 @@
-import dev.tideframe.core.ImageAsset;
-import dev.tideframe.core.Screen;
-import dev.tideframe.edit.ScreenCodec;
+import dev.linqfy.bigCasares.modules.tideframe.engine.core.ImageAsset;
+import dev.linqfy.bigCasares.modules.tideframe.engine.core.Screen;
+import dev.linqfy.bigCasares.modules.tideframe.engine.edit.ScreenCodec;
 import java.awt.Color;
 import java.awt.GradientPaint;
 import java.awt.Graphics2D;

@@ -10,7 +10,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * The part of Tideframe's API BigCasares uses, in BigCasares types. {@link TideframeApiBridge} delegates to the real
- * {@code dev.tideframe.TideframeApi} service; tests use fakes. Nothing here installs screens or rebuilds Tideframe's pack.
+ * {@code dev.linqfy.bigCasares.modules.tideframe.engine.TideframeApi} service; tests use fakes. Nothing here installs screens or rebuilds Tideframe's pack.
  */
 public interface TideframeBridge {
     Set<String> screenIds();

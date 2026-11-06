@@ -1,11 +1,11 @@
-package dev.tideframe.pack;
+package dev.linqfy.bigCasares.modules.tideframe.engine.pack;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import dev.tideframe.core.ImageAsset;
+import dev.linqfy.bigCasares.modules.tideframe.engine.core.ImageAsset;
 import javax.imageio.ImageIO;
 
 /** Own-art software preview. This does not capture or verify the Minecraft client. */

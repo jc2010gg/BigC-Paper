@@ -82,11 +82,11 @@ dependencies {
 // BigCasares' item tests need Spigot's standalone factory; the embedded UI tests exercise Paper audience methods.
 sourceSets {
     test {
-        java.exclude 'dev/tideframe/**'
+        java.exclude 'dev/linqfy/bigCasares/modules/tideframe/engine/**'
     }
     tideframeTest {
         java.srcDir 'src/test/java'
-        java.include 'dev/tideframe/**'
+        java.include 'dev/linqfy/bigCasares/modules/tideframe/engine/**'
         resources.srcDir 'src/test/resources'
         compileClasspath = sourceSets.main.output + configurations.compileClasspath + configurations.testCompileClasspath
         runtimeClasspath = output + sourceSets.main.output + configurations.compileClasspath + configurations.testRuntimeClasspath
@@ -345,7 +345,7 @@ tasks.register('verifyEmbeddedTideframe') {
     doLast {
         def archive = tasks.named('jar').get().archiveFile.get().asFile
         new java.util.zip.ZipFile(archive).withCloseable { zip ->
-            ['dev/tideframe/TideframePlugin.class', 'dev/tideframe/TideframeApi.class',
+            ['dev/linqfy/bigCasares/modules/tideframe/engine/TideframeEngine.class', 'dev/linqfy/bigCasares/modules/tideframe/engine/TideframeApi.class',
              'tideframe/engine/config.yml', 'tideframe/engine/boss-face.png',
              'tideframe/engine/item-icons.tsv', 'META-INF/tideframe/LICENSE'].each { path ->
                 if (zip.getEntry(path) == null) throw new GradleException("Missing embedded Tideframe resource: ${path}")

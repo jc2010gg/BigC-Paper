@@ -1,7 +1,7 @@
 package dev.linqfy.bigCasares.modules.tideframe;
 
-import dev.tideframe.TideframeApi;
-import org.bukkit.Server;
+import dev.linqfy.bigCasares.modules.tideframe.engine.TideframeApi;
+import dev.linqfy.bigCasares.modules.tideframe.engine.TideframeEngine;
 import org.bukkit.entity.Player;
 
 import java.util.List;
@@ -12,27 +12,14 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * {@link TideframeBridge} over Tideframe's registered {@code TideframeApi} service. One of the two classes that name
- * Tideframe types (with {@link TideframeEventRelay}). Its provider is the source-built engine owned by BigCasares.
+ * {@link TideframeBridge} over the module's own engine ({@link TideframeApi}, implemented by the engine this module
+ * creates). With {@link TideframeEventRelay}, the only module classes that name engine types; the rest use fakes in tests.
  */
 final class TideframeApiBridge implements TideframeBridge {
     private final TideframeApi api;
 
     TideframeApiBridge(TideframeApi api) {
         this.api = Objects.requireNonNull(api, "api");
-    }
-
-    /** The bridge, or null when Tideframe has not registered its service. Throws when its API lacks a method used here. */
-    static TideframeBridge connect(Server server) throws NoSuchMethodException {
-        TideframeApiShape.require(TideframeApi.class, Set.class, "screenIds");
-        TideframeApiShape.require(TideframeApi.class, boolean.class, "isPackLoaded", Player.class);
-        TideframeApiShape.require(TideframeApi.class, CompletableFuture.class, "openWhenReady", Player.class, String.class);
-        TideframeApiShape.require(TideframeApi.class, Optional.class, "currentScreen", Player.class);
-        TideframeApiShape.require(TideframeApi.class, void.class, "closeScreen", Player.class);
-        TideframeApiShape.require(TideframeApi.class, void.class, "setVariable", Player.class, String.class, String.class);
-        TideframeApiShape.require(TideframeApi.class, void.class, "setList", Player.class, String.class, List.class);
-        TideframeApi api = server.getServicesManager().load(TideframeApi.class);
-        return api == null ? null : new TideframeApiBridge(api);
     }
 
     @Override
@@ -42,7 +29,7 @@ final class TideframeApiBridge implements TideframeBridge {
 
     @Override
     public boolean isPackLoaded(Player player) {
-        return api instanceof dev.tideframe.TideframePlugin engine ? engine.isOwnPackLoaded(player) : api.isPackLoaded(player);
+        return api instanceof TideframeEngine engine ? engine.isOwnPackLoaded(player) : api.isPackLoaded(player);
     }
 
     @Override

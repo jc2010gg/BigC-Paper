@@ -1,6 +1,6 @@
-import dev.tideframe.core.*;
-import dev.tideframe.edit.ScreenCodec;
-import dev.tideframe.pack.*;
+import dev.linqfy.bigCasares.modules.tideframe.engine.core.*;
+import dev.linqfy.bigCasares.modules.tideframe.engine.edit.ScreenCodec;
+import dev.linqfy.bigCasares.modules.tideframe.engine.pack.*;
 import java.nio.file.*;
 import java.util.*;
 import java.util.zip.ZipFile;

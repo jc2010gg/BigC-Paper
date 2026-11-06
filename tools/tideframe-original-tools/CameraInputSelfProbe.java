@@ -1,4 +1,4 @@
-package dev.tideframe;
+package dev.linqfy.bigCasares.modules.tideframe.engine;
 
 /** Optional probe against the installed official server's own packet/Netty classes. */
 public final class CameraInputSelfProbe {

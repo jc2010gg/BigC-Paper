@@ -1,4 +1,4 @@
-import dev.tideframe.core.*;import dev.tideframe.pack.*;import java.util.*;import java.security.*;import java.nio.charset.StandardCharsets;
+import dev.linqfy.bigCasares.modules.tideframe.engine.core.*;import dev.linqfy.bigCasares.modules.tideframe.engine.pack.*;import java.util.*;import java.security.*;import java.nio.charset.StandardCharsets;
 public class PresentationFingerprint {public static void main(String[] args)throws Exception {
 var e=new Screen.Element("button","OWN DEMO",0,0,1,.4,"button","close","rounded",true,null,true,null);
 for(String mode:List.of("legacy","low")) {

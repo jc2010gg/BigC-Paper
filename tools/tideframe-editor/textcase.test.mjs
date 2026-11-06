@@ -36,7 +36,7 @@ test('text case and look-alikes match the game font', () => {
 });
 
 test('the editor and the plugin share one character set', () => {
-  const java = readFileSync(new URL('../../src/main/java/dev/tideframe/core/LiveText.java', import.meta.url), 'utf8');
+  const java = readFileSync(new URL('../../src/main/java/dev/linqfy/bigCasares/modules/tideframe/engine/core/LiveText.java', import.meta.url), 'utf8');
   const constant = name => java.match(new RegExp(`${name} = "([^"]+)"`))[1];
   assert.equal(LATIN_UPPER, constant('LATIN_UPPER')); assert.equal(LATIN_LOWER, constant('LATIN_LOWER')); assert.equal(TEXT_SYMBOLS, constant('SYMBOLS'));
   assert.equal(TEXT_EXTRA.length, 72);

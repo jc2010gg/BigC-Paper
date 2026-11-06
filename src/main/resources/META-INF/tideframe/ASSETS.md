@@ -4,7 +4,7 @@ Version 0.9.1 includes `src/main/resources/boss-face.png`, an original fantasy p
 
 Version 0.9 adds `core/VisualMenuCatalog.java`: four original procedural images (coastal vault hero and three challenge cards), original layout and PNG examples. `pack/BossBarAssets.java` authors a rose crystal health fill, angular gold vines and guardian medallion in 21 states. The supplied reference informed only the broad concept; no reference pixels, character, branding or typography are embedded. Source and built-in art remain MIT. `tools/MakeBossPreview.java` and `tools/MakeVisualMenuPreview.java` export software previews, not Minecraft screenshots. Scaled HUD font variants reuse our existing PNG bytes and compensate native integer advances; they do not introduce shaders or proprietary resources.
 
-All authored runtime classes are in `dev.tideframe`. No LibreUI, VoidRP, commercial plugin or third-party runtime implementation is included.
+All authored runtime classes are in `dev.linqfy.bigCasares.modules.tideframe.engine`. No LibreUI, VoidRP, commercial plugin or third-party runtime implementation is included.
 
 | Asset | Source | Ownership / generation |
 |---|---|---|

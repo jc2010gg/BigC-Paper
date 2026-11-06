@@ -1,8 +1,8 @@
-import dev.tideframe.core.Screen;
-import dev.tideframe.core.ViewportFit;
-import dev.tideframe.core.VisualMenuCatalog;
-import dev.tideframe.core.demo.RuntimeDemoCatalog;
-import dev.tideframe.pack.HudAssets;
+import dev.linqfy.bigCasares.modules.tideframe.engine.core.Screen;
+import dev.linqfy.bigCasares.modules.tideframe.engine.core.ViewportFit;
+import dev.linqfy.bigCasares.modules.tideframe.engine.core.VisualMenuCatalog;
+import dev.linqfy.bigCasares.modules.tideframe.engine.core.demo.RuntimeDemoCatalog;
+import dev.linqfy.bigCasares.modules.tideframe.engine.pack.HudAssets;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
@@ -28,13 +28,13 @@ public final class SimulateClientTitle {
         Map<String, Screen> screens = new TreeMap<>(Screen.demos());
         RuntimeDemoCatalog.screens().forEach(screens::putIfAbsent);
         screens.putIfAbsent("visual_menu09", VisualMenuCatalog.screen());
-        screens.putIfAbsent(dev.tideframe.core.demo.LogicDemo.ID, dev.tideframe.core.demo.LogicDemo.screen());
-        screens.putIfAbsent(dev.tideframe.core.demo.ShowcaseDemo.ID, dev.tideframe.core.demo.ShowcaseDemo.screen());
-        screens.putIfAbsent(dev.tideframe.core.demo.MediaDemo.ID, dev.tideframe.core.demo.MediaDemo.screen());
+        screens.putIfAbsent(dev.linqfy.bigCasares.modules.tideframe.engine.core.demo.LogicDemo.ID, dev.linqfy.bigCasares.modules.tideframe.engine.core.demo.LogicDemo.screen());
+        screens.putIfAbsent(dev.linqfy.bigCasares.modules.tideframe.engine.core.demo.ShowcaseDemo.ID, dev.linqfy.bigCasares.modules.tideframe.engine.core.demo.ShowcaseDemo.screen());
+        screens.putIfAbsent(dev.linqfy.bigCasares.modules.tideframe.engine.core.demo.MediaDemo.ID, dev.linqfy.bigCasares.modules.tideframe.engine.core.demo.MediaDemo.screen());
         // Optional: preview the boss prompts with a config.yml (TIDEFRAME_CONFIG=path/to/config.yml).
         if (System.getenv("TIDEFRAME_CONFIG") != null)
-            screens.putAll(dev.tideframe.core.demo.BossFightScreens.build(dev.tideframe.BossFightConfig.load(Path.of(System.getenv("TIDEFRAME_CONFIG")))));
-        Screen screen = dev.tideframe.core.CloseControl.prepare(screens.get(id));
+            screens.putAll(dev.linqfy.bigCasares.modules.tideframe.engine.core.demo.BossFightScreens.build(dev.linqfy.bigCasares.modules.tideframe.engine.BossFightConfig.load(Path.of(System.getenv("TIDEFRAME_CONFIG")))));
+        Screen screen = dev.linqfy.bigCasares.modules.tideframe.engine.core.CloseControl.prepare(screens.get(id));
         var viewport = new ViewportFit(windowW, windowH, guiArg);
         int gui = viewport.effectiveGuiScale();
         var assets = HudAssets.create(List.of(screen));
@@ -51,19 +51,19 @@ public final class SimulateClientTitle {
         sample.putAll(Map.of("{boss_name}", "WARDEN", "{lives}", "4/5", "{balance_short}", "1.25M"));
         var barSample = Map.of("health", "0.7000|0.8500", "boss", "0.6200|0.8000", "hp", "0.6000", "timer", "0.5500", "xp", "0.4500");
         for (var element : screen.elements()) {
-            if (dev.tideframe.core.LiveText.isBar(element)) {
-                int[] box = dev.tideframe.core.LiveText.barBox(element);
-                String v = barSample.getOrDefault(dev.tideframe.core.LiveText.barSource(element), "0.7");
-                int s = screen.presentation().scale(), filled = dev.tideframe.core.LiveText.barPixels(v, box[2]), trail = dev.tideframe.core.LiveText.barTrailPixels(v, box[2]), prefix = (box[0] - 128) * s;
+            if (dev.linqfy.bigCasares.modules.tideframe.engine.core.LiveText.isBar(element)) {
+                int[] box = dev.linqfy.bigCasares.modules.tideframe.engine.core.LiveText.barBox(element);
+                String v = barSample.getOrDefault(dev.linqfy.bigCasares.modules.tideframe.engine.core.LiveText.barSource(element), "0.7");
+                int s = screen.presentation().scale(), filled = dev.linqfy.bigCasares.modules.tideframe.engine.core.LiveText.barPixels(v, box[2]), trail = dev.linqfy.bigCasares.modules.tideframe.engine.core.LiveText.barTrailPixels(v, box[2]), prefix = (box[0] - 128) * s;
                 segments.add(new String[]{HudAssets.fontName(multiplier), HudAssets.hudSpace(prefix), "0"});
                 segments.add(new String[]{assets.barFont(screen, element, multiplier), HudAssets.barGlyphs(filled, trail, HudAssets.barCellWidth(element)), "#ffffff"});
                 segments.add(new String[]{HudAssets.fontName(multiplier), HudAssets.hudSpace(-prefix - trail * s), "0"});
                 continue;
             }
-            if (!dev.tideframe.core.LiveText.isLive(element)) continue;
+            if (!dev.linqfy.bigCasares.modules.tideframe.engine.core.LiveText.isLive(element)) continue;
             String value = element.text(); for (var e : sample.entrySet()) value = value.replace(e.getKey(), e.getValue());
-            String text = dev.tideframe.core.LiveText.sanitize(value, element);
-            int s = screen.presentation().scale(), prefix = (dev.tideframe.core.LiveText.lineLeft(element, text.length()) - HudAssets.livePad(element) - 128) * s;
+            String text = dev.linqfy.bigCasares.modules.tideframe.engine.core.LiveText.sanitize(value, element);
+            int s = screen.presentation().scale(), prefix = (dev.linqfy.bigCasares.modules.tideframe.engine.core.LiveText.lineLeft(element, text.length()) - HudAssets.livePad(element) - 128) * s;
             segments.add(new String[]{HudAssets.fontName(multiplier), HudAssets.hudSpace(prefix), "0"});
             segments.add(new String[]{assets.liveFont(screen, element, multiplier), HudAssets.liveGlyphs(element, text, s, multiplier),
                     HudAssets.liveColorsBaked(element) ? "#ffffff" : element.style().textColor()});
@@ -107,7 +107,7 @@ public final class SimulateClientTitle {
         g.setColor(new Color(0, 0, 0, 120)); g.fillRect((windowW - 182 * gui) / 2, windowH - 22 * gui, 182 * gui, 22 * gui);
         double unit = 4.0 * gui; // title scale x GUI scale = physical pixels per font unit
         // TIDEFRAME_FIT=1 applies the auto-fit shader's scaling about the screen centre (use SIZE 2, the reference size).
-        double fit = System.getenv("TIDEFRAME_FIT") != null ? dev.tideframe.pack.FitShader.scale(windowW / (double) gui, windowH / (double) gui) : 1;
+        double fit = System.getenv("TIDEFRAME_FIT") != null ? dev.linqfy.bigCasares.modules.tideframe.engine.pack.FitShader.scale(windowW / (double) gui, windowH / (double) gui) : 1;
         double centreX = windowW / 2.0, centreY = windowH / 2.0;
         double originX = guiW / 2 * gui, originY = guiH / 2 * gui;
         double x = 0; // Font.width(text) is zero for these sequences, so x starts at -0/2.

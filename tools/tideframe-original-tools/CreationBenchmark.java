@@ -1,5 +1,5 @@
-import dev.tideframe.edit.ScreenCodec;
-import dev.tideframe.pack.*;
+import dev.linqfy.bigCasares.modules.tideframe.engine.edit.ScreenCodec;
+import dev.linqfy.bigCasares.modules.tideframe.engine.pack.*;
 import java.lang.management.ManagementFactory;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;

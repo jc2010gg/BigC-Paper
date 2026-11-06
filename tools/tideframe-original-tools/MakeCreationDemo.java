@@ -1,6 +1,6 @@
-import dev.tideframe.core.*;
-import dev.tideframe.edit.ScreenCodec;
-import dev.tideframe.pack.HudRaster;
+import dev.linqfy.bigCasares.modules.tideframe.engine.core.*;
+import dev.linqfy.bigCasares.modules.tideframe.engine.edit.ScreenCodec;
+import dev.linqfy.bigCasares.modules.tideframe.engine.pack.HudRaster;
 import java.nio.file.*;
 import java.util.List;
 import javax.imageio.ImageIO;

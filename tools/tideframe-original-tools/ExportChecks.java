@@ -1,5 +1,5 @@
-import dev.tideframe.core.Screen;
-import dev.tideframe.edit.ScreenCodec;
+import dev.linqfy.bigCasares.modules.tideframe.engine.core.Screen;
+import dev.linqfy.bigCasares.modules.tideframe.engine.edit.ScreenCodec;
 import java.nio.file.*;
 
 /** Real browser export -> production decoder -> demo files. Java 21 or later. */

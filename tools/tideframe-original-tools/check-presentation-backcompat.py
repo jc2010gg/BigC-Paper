@@ -19,9 +19,9 @@ def main():
     target.mkdir(parents=True, exist_ok=True)
     sources = []
     for file in FILES:
-        path = target / 'source/dev/tideframe' / file
+        path = target / 'source/dev/linqfy/bigCasares/modules/tideframe/engine' / file
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(subprocess.check_output(['git', 'show', args.baseline + ':src/main/java/dev/tideframe/' + file], cwd=repo))
+        path.write_bytes(subprocess.check_output(['git', 'show', args.baseline + ':src/main/java/dev/linqfy/bigCasares/modules/tideframe/engine/' + file], cwd=repo))
         sources.append(str(path))
     suffix = '.exe' if os.name == 'nt' else ''
     java = Path(args.java_home) / 'bin'

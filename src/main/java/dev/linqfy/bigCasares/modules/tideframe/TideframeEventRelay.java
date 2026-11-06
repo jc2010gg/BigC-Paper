@@ -1,8 +1,8 @@
 package dev.linqfy.bigCasares.modules.tideframe;
 
-import dev.tideframe.TideframeClickEvent;
-import dev.tideframe.TideframeCloseEvent;
-import dev.tideframe.TideframeOpenEvent;
+import dev.linqfy.bigCasares.modules.tideframe.engine.TideframeClickEvent;
+import dev.linqfy.bigCasares.modules.tideframe.engine.TideframeCloseEvent;
+import dev.linqfy.bigCasares.modules.tideframe.engine.TideframeOpenEvent;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 

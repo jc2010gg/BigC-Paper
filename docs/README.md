@@ -14,7 +14,6 @@ guides explain how to navigate and operate it:
 | Custom dimensions: framework, API, building a new one | [Dimensions](dimensions/README.md) |
 | The Sift dimension (port of Mielon's mod) | [The Sift](dimensions/the-sift.md) |
 | Phone assets and video conversion | [Celular](celular/README.md) |
-| Optional Tideframe screens (missions, shop) | [Tideframe](tideframe.md) |
 | Protocol test client | [Client](../tools/minecraft-test-client/README.md) |
 | Audit findings and cleanup proposals | [2026-10-14 audit](audits/2026-10-14.md) |
 

@@ -20,8 +20,8 @@ $classPath = (@($compiled, $officialJar) + $libraries) -join [IO.Path]::PathSepa
 if ($LASTEXITCODE -ne 0) { throw 'Camera input probe compilation failed.' }
 Push-Location $probe
 try {
-    & (Join-Path $JavaHome 'bin/java.exe') -Xmx512m -cp ($classPath + [IO.Path]::PathSeparator + $probe) dev.tideframe.CameraInputSelfProbe
+    & (Join-Path $JavaHome 'bin/java.exe') -Xmx512m -cp ($classPath + [IO.Path]::PathSeparator + $probe) dev.linqfy.bigCasares.modules.tideframe.engine.CameraInputSelfProbe
     if ($LASTEXITCODE -ne 0) { throw 'Camera input packet/EmbeddedChannel probe failed.' }
-    & (Join-Path $JavaHome 'bin/java.exe') -Xmx512m -cp ($classPath + [IO.Path]::PathSeparator + $probe) dev.tideframe.CameraInputPendingProbe
+    & (Join-Path $JavaHome 'bin/java.exe') -Xmx512m -cp ($classPath + [IO.Path]::PathSeparator + $probe) dev.linqfy.bigCasares.modules.tideframe.engine.CameraInputPendingProbe
     if ($LASTEXITCODE -ne 0) { throw 'Camera input ADD_PENDING event-loop probe failed.' }
 } finally { Pop-Location }

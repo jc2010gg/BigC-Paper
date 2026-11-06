@@ -1,5 +1,5 @@
 // Colours for words inside a text (idea 28, schema 9), as in MiniMessage: "Saldo: <gold>{balance}</gold>" or
-// "<#ffcc00>word</#ffcc00>". The twin of dev.tideframe.core.RichText, with exactly the same rules: only the 16 game
+// "<#ffcc00>word</#ffcc00>". The twin of dev.linqfy.bigCasares.modules.tideframe.engine.core.RichText, with exactly the same rules: only the 16 game
 // colour names (plus grey and dark_grey) and #rrggbb are tags; anything else, such as "<3" or "a<b", stays text. A
 // closing tag ends the latest tag spelled the same way (and any opened after it); a closing tag with nothing to close
 // is text, and an unclosed tag runs to the end. "\<" draws a "<" a tag would otherwise take.

@@ -1,6 +1,6 @@
-import dev.tideframe.core.VisualMenuCatalog;
-import dev.tideframe.edit.ScreenCodec;
-import dev.tideframe.pack.HudRaster;
+import dev.linqfy.bigCasares.modules.tideframe.engine.core.VisualMenuCatalog;
+import dev.linqfy.bigCasares.modules.tideframe.engine.edit.ScreenCodec;
+import dev.linqfy.bigCasares.modules.tideframe.engine.pack.HudRaster;
 import javax.imageio.ImageIO;
 import java.nio.file.Files;
 import java.nio.file.Path;

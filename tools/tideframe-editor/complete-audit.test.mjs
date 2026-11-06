@@ -5,7 +5,7 @@ import { writeSetting, readSetting } from './advanced-settings.mjs';
 import { readFileSync } from 'node:fs';
 
 test('every current Java style and presentation property has an editor control', () => {
-  const java = readFileSync(new URL('../../src/main/java/dev/tideframe/core/Screen.java', import.meta.url), 'utf8');
+  const java = readFileSync(new URL('../../src/main/java/dev/linqfy/bigCasares/modules/tideframe/engine/core/Screen.java', import.meta.url), 'utf8');
   const html = readFileSync(new URL('./index.html', import.meta.url), 'utf8');
   for (const type of ['Style', 'Presentation']) {
     const fields = java.match(new RegExp(`public record ${type}\\(([\\s\\S]*?)\\)`))[1].split(',').map(s => s.trim().split(/\s+/).at(-1));

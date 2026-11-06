@@ -1,4 +1,4 @@
-// Idea 28 in the editor: the same tag rules as dev.tideframe.core.RichText (RichTextTest.java has the same cases).
+// Idea 28 in the editor: the same tag rules as dev.linqfy.bigCasares.modules.tideframe.engine.core.RichText (RichTextTest.java has the same cases).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { runs, plain, hasTags, colors, escape } from './richtext.mjs';

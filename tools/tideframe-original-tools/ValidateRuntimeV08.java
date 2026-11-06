@@ -1,7 +1,7 @@
-import dev.tideframe.core.*;
-import dev.tideframe.core.demo.*;
-import dev.tideframe.edit.*;
-import dev.tideframe.pack.*;
+import dev.linqfy.bigCasares.modules.tideframe.engine.core.*;
+import dev.linqfy.bigCasares.modules.tideframe.engine.core.demo.*;
+import dev.linqfy.bigCasares.modules.tideframe.engine.edit.*;
+import dev.linqfy.bigCasares.modules.tideframe.engine.pack.*;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
@@ -32,7 +32,7 @@ public final class ValidateRuntimeV08 {
         require(sourceIds.size()==10,"Expected ten current operator JSON inputs, found "+sourceIds.size());
         var inputs=inventoryInputs(source,sourceIds);
         var screens=new TreeMap<String,Screen>(Screen.demos());
-        // Match TideframePlugin startup: stored files override built-ins; runtime demos are putIfAbsent.
+        // Match TideframeEngine startup: stored files override built-ins; runtime demos are putIfAbsent.
         for(String id:sourceIds)screens.put(id,store.load(id));
         var runtime=RuntimeDemoCatalog.screens();require(runtime.size()==48,"Expected 48 own runtime demo frames");
         runtime.forEach((id,screen)->screens.putIfAbsent(id,presentation(screen)));

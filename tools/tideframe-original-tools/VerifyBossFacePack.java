@@ -1,5 +1,5 @@
-import dev.tideframe.core.ImageAsset;
-import dev.tideframe.pack.BossBarAssets;
+import dev.linqfy.bigCasares.modules.tideframe.engine.core.ImageAsset;
+import dev.linqfy.bigCasares.modules.tideframe.engine.pack.BossBarAssets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;

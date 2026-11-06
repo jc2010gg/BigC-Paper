@@ -1,4 +1,4 @@
-import dev.tideframe.edit.ScreenCodec;
+import dev.linqfy.bigCasares.modules.tideframe.engine.edit.ScreenCodec;
 import java.nio.file.*;
 import java.security.MessageDigest;
 import java.util.HexFormat;

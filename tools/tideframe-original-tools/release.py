@@ -43,7 +43,7 @@ def inspect():
     with zipfile.ZipFile(JAR) as z:
         assert z.testzip() is None and 'LICENSE' in z.namelist()
         classes=[name for name in z.namelist() if name.endswith('.class')]
-        assert classes and all(name.startswith('dev/tideframe/') for name in classes)
+        assert classes and all(name.startswith('dev/linqfy/bigCasares/modules/tideframe/engine/') for name in classes)
         assert not any(name.endswith('.jar') for name in z.namelist())
         majors=sorted({int.from_bytes(z.read(name)[6:8],'big') for name in classes});assert majors==[65]
         jar_info={'sha256':sha(JAR),'bytes':JAR.stat().st_size,'classCount':len(classes),'bytecodeMajors':majors,'onlyAuthoredRuntimeNamespace':True,'embeddedJars':0,'zipCrc':'passed'}
