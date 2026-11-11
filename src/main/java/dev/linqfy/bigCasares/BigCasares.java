@@ -71,8 +71,14 @@ import java.util.UUID;
 
 public final class BigCasares extends JavaPlugin {
 
-    private static final List<String> ROOT_COMMAND_NAMES = List.of(
-        "bigcasares", "shop", "rating", "team", "teammanage", "nexus", "boss"
+    /**
+     * Commands of plugin.yml that BigCasaresCommand answers by name. A declared command left out of this list has no
+     * executor, and Bukkit only echoes its usage (that is how /misiones, /peligro, /tumba, /baltop and /resourcepack
+     * did nothing).
+     */
+    static final List<String> ROOT_COMMAND_NAMES = List.of(
+        "bigcasares", "shop", "rating", "team", "teammanage", "nexus", "boss",
+        "misiones", "peligro", "tumba", "baltop", "resourcepack"
     );
 
     private ModuleManager moduleManager;
