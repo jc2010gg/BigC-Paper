@@ -37,10 +37,6 @@ public class MobScalingListener implements Listener {
     private final NamespacedKey tombstoneKey;
     private final MobScalingMutations mutations;
 
-    public MobScalingListener(JavaPlugin plugin, MobScalingSettings settings) {
-        this(plugin, settings, plugin != null ? new MobScalingMutations(plugin) : null);
-    }
-
     MobScalingListener(JavaPlugin plugin, MobScalingSettings settings, MobScalingMutations mutations) {
         this.plugin = plugin;
         this.settings = settings;
@@ -156,7 +152,7 @@ public class MobScalingListener implements Listener {
         if (days < 0) days = 0;
 
         // Apply health and damage multipliers
-        double multiplier = settings.formulaA() * Math.pow(settings.formulaB(), days) + settings.formulaC();
+        double multiplier = settings.multiplier(days);
 
         scaleAttribute(entity, Attribute.MAX_HEALTH, multiplier);
         if (entity.getAttribute(Attribute.MAX_HEALTH) != null) {

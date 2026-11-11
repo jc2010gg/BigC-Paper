@@ -27,6 +27,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class MobScalingMutations implements Listener {
 
     private final JavaPlugin plugin;
+    private final SpecialEnemies specialEnemies;
     private final NamespacedKey mutationKey;
     private final NamespacedKey stolenItemKey;
 
@@ -48,8 +49,9 @@ public class MobScalingMutations implements Listener {
     // Track drowned flood timers (Entity to loop count)
     private final Map<Entity, Integer> drownedFloodTimer = new ConcurrentHashMap<>();
 
-    public MobScalingMutations(JavaPlugin plugin) {
+    public MobScalingMutations(JavaPlugin plugin, SpecialEnemies specialEnemies) {
         this.plugin = plugin;
+        this.specialEnemies = specialEnemies;
         this.mutationKey = new NamespacedKey(plugin, "cursed_mutation");
         this.stolenItemKey = new NamespacedKey(plugin, "stolen_item");
 
@@ -68,13 +70,7 @@ public class MobScalingMutations implements Listener {
         } else if (entity instanceof Drowned) {
             applyMutation(entity, "FLOOD");
         } else if (entity instanceof Zombie zombie && !(entity instanceof PigZombie)) {
-            if (ThreadLocalRandom.current().nextBoolean()) {
-                zombie.setBaby();
-                zombie.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, PotionEffect.INFINITE_DURATION, 1));
-                applyMutation(entity, "SPEED_BABY");
-            } else {
-                applyMutation(entity, "TOXIC");
-            }
+            applyZombieMutation(zombie);
         } else if (entity instanceof Enderman) {
             applyMutation(entity, "ABDUCTOR");
         } else if (entity instanceof Creeper) {
@@ -130,6 +126,21 @@ public class MobScalingMutations implements Listener {
             applyMutation(entity, "SCAMMER");
         } else if (entity instanceof Llama) {
             applyMutation(entity, "ACID_SPIT");
+        }
+    }
+
+    private void applyZombieMutation(Zombie zombie) {
+        boolean lancer = specialEnemies != null && specialEnemies.settings().rabbitLancerEnabled();
+        boolean pearls = specialEnemies != null && specialEnemies.settings().pearlZombieEnabled();
+        switch (SpecialEnemyMath.pickZombieVariant(lancer, pearls, ThreadLocalRandom.current().nextInt(4))) {
+            case SPEED_BABY -> {
+                zombie.setBaby();
+                zombie.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, PotionEffect.INFINITE_DURATION, 1));
+                applyMutation(zombie, "SPEED_BABY");
+            }
+            case TOXIC -> applyMutation(zombie, "TOXIC");
+            case RABBIT_LANCER -> specialEnemies.makeRabbitLancer(zombie);
+            case PEARL_THROWER -> specialEnemies.makePearlZombie(zombie);
         }
     }
 
@@ -667,9 +678,7 @@ public class MobScalingMutations implements Listener {
         }
     }
 
-    // An interaction another plugin already cancelled (a Tideframe menu holding the player's clicks, a protected area)
-    // never reached the villager: no theft.
-    @EventHandler(ignoreCancelled = true)
+    @EventHandler
     public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
         Entity entity = event.getRightClicked();
         String mutation = getMutation(entity);

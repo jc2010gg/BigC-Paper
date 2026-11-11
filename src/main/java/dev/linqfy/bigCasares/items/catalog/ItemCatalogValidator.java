@@ -36,7 +36,8 @@ public final class ItemCatalogValidator {
         Map.entry("glider_tier_3", "glider"),
         Map.entry("glider_tier_4", "glider"),
         Map.entry("glider_tier_5", "glider"),
-        Map.entry("glider_tier_6", "glider")
+        Map.entry("glider_tier_6", "glider"),
+        Map.entry("keep_inventory_totem", "keep-inventory-totem")
     );
 
     private final ItemMaterialValidator materials;

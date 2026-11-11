@@ -16,9 +16,7 @@ class BigCasaresCommandTest {
 
     @Test
     void suggestsRootSubcommands() {
-        assertEquals(14, BigCasaresCommand.rootSuggestions("").size());
-        assertEquals(java.util.List.of("historial"), BigCasaresCommand.rootSuggestions("hi"));
-        assertEquals(java.util.List.of("tideframe"), BigCasaresCommand.rootSuggestions("ti"));
+        assertEquals(12, BigCasaresCommand.rootSuggestions("").size());
         assertTrue(BigCasaresCommand.rootSuggestions("re").contains("reload"));
         assertTrue(BigCasaresCommand.rootSuggestions("pe").contains("peligro"));
         assertTrue(BigCasaresCommand.rootSuggestions("te").contains("team"));

@@ -1,0 +1,27 @@
+id: keep_inventory_totem
+mechanic: keep-inventory-totem
+material: HEART_OF_THE_SEA
+item-model: minecraft:totem_of_undying
+legacy-custom-model-data: 1024
+display:
+  translation-key: item.bigcasares.keep_inventory_totem
+  fallback-name: "Tótem de Conservación"
+  lore:
+    - "§7Si morís con este tótem encima,"
+    - "§7conservás todo tu inventario."
+    - ""
+    - "§eSolo podés llevar uno."
+    - "§eSe rompe al usarse y tiene recarga larga."
+max-stack-size: 1
+recipe:
+  key: keep_inventory_totem_recipe
+  result-amount: 1
+  shape: ["NDN", "ETE", "NDN"]
+  ingredients:
+    N: NETHERITE_INGOT
+    D: DIAMOND_BLOCK
+    E: ECHO_SHARD
+    T: TOTEM_OF_UNDYING
+appearance:
+  java-item-definition: java/assets/bigcasares/items/keep_inventory_totem.json
+  bedrock-texture: bedrock/textures/item/keep_inventory_totem.png

@@ -1,0 +1,384 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:custom_model_data",
+    "index": 0,
+    "cases": [
+      {
+        "when": "2s",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_2s"
+        }
+      },
+      {
+        "when": "2h",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_2h"
+        }
+      },
+      {
+        "when": "2d",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_2d"
+        }
+      },
+      {
+        "when": "2c",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_2c"
+        }
+      },
+      {
+        "when": "3s",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_3s"
+        }
+      },
+      {
+        "when": "3h",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_3h"
+        }
+      },
+      {
+        "when": "3d",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_3d"
+        }
+      },
+      {
+        "when": "3c",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_3c"
+        }
+      },
+      {
+        "when": "4s",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_4s"
+        }
+      },
+      {
+        "when": "4h",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_4h"
+        }
+      },
+      {
+        "when": "4d",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_4d"
+        }
+      },
+      {
+        "when": "4c",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_4c"
+        }
+      },
+      {
+        "when": "5s",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_5s"
+        }
+      },
+      {
+        "when": "5h",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_5h"
+        }
+      },
+      {
+        "when": "5d",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_5d"
+        }
+      },
+      {
+        "when": "5c",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_5c"
+        }
+      },
+      {
+        "when": "6s",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_6s"
+        }
+      },
+      {
+        "when": "6h",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_6h"
+        }
+      },
+      {
+        "when": "6d",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_6d"
+        }
+      },
+      {
+        "when": "6c",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_6c"
+        }
+      },
+      {
+        "when": "7s",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_7s"
+        }
+      },
+      {
+        "when": "7h",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_7h"
+        }
+      },
+      {
+        "when": "7d",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_7d"
+        }
+      },
+      {
+        "when": "7c",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_7c"
+        }
+      },
+      {
+        "when": "8s",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_8s"
+        }
+      },
+      {
+        "when": "8h",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_8h"
+        }
+      },
+      {
+        "when": "8d",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_8d"
+        }
+      },
+      {
+        "when": "8c",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_8c"
+        }
+      },
+      {
+        "when": "9s",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_9s"
+        }
+      },
+      {
+        "when": "9h",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_9h"
+        }
+      },
+      {
+        "when": "9d",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_9d"
+        }
+      },
+      {
+        "when": "9c",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_9c"
+        }
+      },
+      {
+        "when": "10s",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_10s"
+        }
+      },
+      {
+        "when": "10h",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_10h"
+        }
+      },
+      {
+        "when": "10d",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_10d"
+        }
+      },
+      {
+        "when": "10c",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_10c"
+        }
+      },
+      {
+        "when": "js",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_js"
+        }
+      },
+      {
+        "when": "jh",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_jh"
+        }
+      },
+      {
+        "when": "jd",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_jd"
+        }
+      },
+      {
+        "when": "jc",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_jc"
+        }
+      },
+      {
+        "when": "qs",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_qs"
+        }
+      },
+      {
+        "when": "qh",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_qh"
+        }
+      },
+      {
+        "when": "qd",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_qd"
+        }
+      },
+      {
+        "when": "qc",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_qc"
+        }
+      },
+      {
+        "when": "ks",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_ks"
+        }
+      },
+      {
+        "when": "kh",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_kh"
+        }
+      },
+      {
+        "when": "kd",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_kd"
+        }
+      },
+      {
+        "when": "kc",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_kc"
+        }
+      },
+      {
+        "when": "as",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_as"
+        }
+      },
+      {
+        "when": "ah",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_ah"
+        }
+      },
+      {
+        "when": "ad",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_ad"
+        }
+      },
+      {
+        "when": "ac",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_ac"
+        }
+      },
+      {
+        "when": "back",
+        "model": {
+          "type": "minecraft:model",
+          "model": "bigcasares:item/casino/card_back"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "bigcasares:item/casino/card_back"
+    }
+  }
+}

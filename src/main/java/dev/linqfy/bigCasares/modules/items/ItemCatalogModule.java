@@ -48,7 +48,8 @@ public final class ItemCatalogModule implements PluginModule {
         "glider_tier_3.yml",
         "glider_tier_4.yml",
         "glider_tier_5.yml",
-        "glider_tier_6.yml"
+        "glider_tier_6.yml",
+        "keep_inventory_totem.yml"
     );
 
     private final BigCasares plugin;

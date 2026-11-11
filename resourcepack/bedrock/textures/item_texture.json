@@ -32,6 +32,9 @@
     "bigcasares.nuke_shot": {
       "textures": "textures/blocks/tnt_side"
     },
+    "bigcasares.keep_inventory_totem": {
+      "textures": "textures/items/totem"
+    },
     "bigcasares.crossbow_amethyst_shard": {
       "textures": "textures/item/crossbow_amethyst_shard"
     },

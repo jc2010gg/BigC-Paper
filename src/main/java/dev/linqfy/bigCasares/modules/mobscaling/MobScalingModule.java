@@ -46,7 +46,13 @@ public final class MobScalingModule implements PluginModule {
 
         BukkitRuntimeRegistrations registrations = new BukkitRuntimeRegistrations(plugin, scope);
 
-        this.listener = new MobScalingListener(plugin, settings);
+        SpecialEnemies specialEnemies = new SpecialEnemies(plugin, SpecialEnemySettings.fromConfig(plugin.getConfig()));
+        registrations.registerListener("mob-scaling-special-enemies", specialEnemies);
+        registrations.scheduleRepeating("mob-scaling-special-enemies-tick", specialEnemies::tick,
+                SpecialEnemies.TASK_PERIOD_TICKS, SpecialEnemies.TASK_PERIOD_TICKS);
+        registrations.ownCleanup("mob-scaling-special-enemies-state", specialEnemies::clear);
+
+        this.listener = new MobScalingListener(plugin, settings, new MobScalingMutations(plugin, specialEnemies));
         registrations.registerListener("mob-scaling-listener", listener);
         registrations.registerListener("mob-scaling-mutations", listener.getMutations());
 
@@ -82,7 +88,7 @@ public final class MobScalingModule implements PluginModule {
             long days = ChronoUnit.DAYS.between(settings.startDate(), LocalDate.now());
             if (days < 0) days = 0;
 
-            double multiplier = settings.formulaA() * Math.pow(settings.formulaB(), days) + settings.formulaC();
+            double multiplier = settings.multiplier(days);
             double chance = Math.min(settings.maxMutationChance(), settings.baseMutationChance() + (settings.mutationChancePerDay() * days));
 
             sender.sendMessage("§6--- Mob Scaling Info ---");

@@ -42,7 +42,8 @@ class DefaultItemCatalogTest {
             "glider_tier_3.yml",
             "glider_tier_4.yml",
             "glider_tier_5.yml",
-            "glider_tier_6.yml"
+            "glider_tier_6.yml",
+            "keep_inventory_totem.yml"
         );
         ItemCatalogSeeder seeder = new ItemCatalogSeeder(names);
         seeder.seed(name -> resource("content/items/" + name), tempDir.resolve("items"));
@@ -50,7 +51,7 @@ class DefaultItemCatalogTest {
         CustomItemCatalog catalog = new ItemCatalogLoader().load(tempDir.resolve("items"));
         new ItemCatalogValidator().validate(catalog, Path.of("resourcepack"));
 
-        assertEquals(23, catalog.size());
+        assertEquals(24, catalog.size());
         assertTrue(catalog.find("copper_apple").isPresent());
         assertTrue(catalog.find("smoke_bomb").isPresent());
         assertTrue(catalog.find("prismarine_arrow").isPresent());

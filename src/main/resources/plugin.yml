@@ -4,7 +4,7 @@ main: dev.linqfy.bigCasares.BigCasares
 api-version: '26.2'
 load: POSTWORLD
 depend: [BetterModel]
-softdepend: [Vault, PlaceholderAPI, Geyser-Spigot, floodgate, ItemsAdder]
+softdepend: [Vault, PlaceholderAPI, Geyser-Spigot, floodgate, GeyserModelEngine]
 authors: [ linqfy ]
 description: BigCasares core plugin for server modules
 libraries:
@@ -12,9 +12,6 @@ libraries:
   - net.dv8tion:JDA:6.4.1
 
 commands:
-  tideframe:
-    description: Manage the embedded Tideframe UI module
-    usage: /tideframe
   bigcasares:
     description: BigCasares management command
     usage: /<command> give <item_id> [player] [amount]
@@ -57,6 +54,10 @@ commands:
     usage: /<command> <spawn <variante>|remove|list|give <item> [cantidad]|bailar <1-5|parar> [todos]|ciudad <aqui|cerca>|boss [quitar]>
     permission: bigcasares.donpollos.admin
     aliases: [ donpollos ]
+  mutango:
+    description: Mutango Boss (spawn, fases, ruinas, santuario y premios)
+    usage: /<command> [quitar|atacar|fase|ruinas|santuario|premios]
+    permission: bigcasares.mutango.admin
   jeremy:
     description: Manage the Jeremy hunter
     usage: /<command> <status|start [player]|stop|cooldown reset>
@@ -66,6 +67,14 @@ commands:
     usage: /<command> give [player]
     permission: bigcasares.celular.admin
     aliases: [ celu ]
+  esquizo:
+    description: Manage schizophrenia episodes and give the Lobotomizador spear
+    usage: /<command> <start <player> [1-5]|stop <player>|status|give [player]|provocar <player> [hallucination]>
+    aliases: [ esquizofrenia, schizo ]
+    permission: bigcasares.schizophrenia.admin
+  casino:
+    description: El Gran Casares (deuda, jackpot; admins construyen y colocan atracciones)
+    usage: /<command> [deuda|jackpot|construir|colocar|quitar|lista|trago]
   glider:
     description: Give one of the six BigCasares Glider tiers
     usage: /<command> give <1-6> [player] [amount]
@@ -139,9 +148,8 @@ commands:
 
 
 permissions:
-  tideframe.use:
-    default: true
-  tideframe.edit:
+  bigcasares.mutango.admin:
+    description: Manage Mutango Boss (spawn, phases, ruins, shrine and rewards)
     default: op
   bigcasares.sift.models.others:
     description: Switch The Sift's block models on or off for another player
@@ -162,7 +170,6 @@ permissions:
       bigcasares.pack.reload: true
       bigcasares.pack.info: true
       bigcasares.pack.send: true
-      bigcasares.tideframe.status: true
       bigcasares.items.reload: true
       bigcasares.items.info: true
       bigcasares.skillrating.view: true
@@ -189,9 +196,12 @@ permissions:
       bigcasares.bloodmoon.stop: true
       bigcasares.jeremy.admin: true
       bigcasares.donpollos.admin: true
+      bigcasares.mutango.admin: true
       bigcasares.jeremy.start: true
       bigcasares.jeremy.stop: true
       bigcasares.celular.admin: true
+      bigcasares.schizophrenia.admin: true
+      bigcasares.casino.admin: true
       bigcasares.glider.admin: true
       bigcasares.glider.give: true
       bigcasares.dimension.admin: true
@@ -259,14 +269,6 @@ permissions:
   bigcasares.pack.send:
     description: Send the active BigCasares resource pack to Java players
     default: op
-
-  bigcasares.tideframe.status:
-    description: View the embedded Tideframe engine state (pack, screens, players who can see them)
-    default: op
-
-  bigcasares.shop.history:
-    description: View your own last shop purchases and sales
-    default: true
 
   bigcasares.items.reload:
     description: Reload the BigCasares declarative item catalog
@@ -342,8 +344,16 @@ permissions:
     description: Stop the active Jeremy hunt
     default: op
 
+  bigcasares.schizophrenia.admin:
+    description: Start, stop and provoke schizophrenia episodes; give the Lobotomizador
+    default: op
+
   bigcasares.celular.admin:
     description: Give Celular phones with /celular give
+    default: op
+
+  bigcasares.casino.admin:
+    description: Build the casino, place or remove attractions and give drinks with /casino
     default: op
 
   bigcasares.glider.admin:

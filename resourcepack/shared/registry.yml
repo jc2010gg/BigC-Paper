@@ -68,6 +68,10 @@ assets:
     type: item-model
     java-model: bigcasares:item/nuke_shot
     texture: minecraft:blocks/tnt_side
+  keep-inventory-totem:
+    type: item-model
+    java-model: bigcasares:item/keep_inventory_totem
+    texture: minecraft:items/totem
   crossbow-amethyst-shard:
     type: item-model
     java-model: bigcasares:item/crossbow_amethyst_shard
