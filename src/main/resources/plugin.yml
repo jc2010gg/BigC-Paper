@@ -4,7 +4,7 @@ main: dev.linqfy.bigCasares.BigCasares
 api-version: '26.2'
 load: POSTWORLD
 depend: [BetterModel]
-softdepend: [Vault, PlaceholderAPI, Geyser-Spigot, floodgate, GeyserModelEngine, ItemsAdder]
+softdepend: [Vault, PlaceholderAPI, Geyser-Spigot, floodgate, GeyserModelEngine]
 authors: [ linqfy ]
 description: BigCasares core plugin for server modules
 libraries:
@@ -12,9 +12,6 @@ libraries:
   - net.dv8tion:JDA:6.4.1
 
 commands:
-  tideframe:
-    description: Manage the embedded Tideframe UI module
-    usage: /tideframe
   bigcasares:
     description: BigCasares management command
     usage: /<command> give <item_id> [player] [amount]
@@ -151,10 +148,6 @@ commands:
 
 
 permissions:
-  tideframe.use:
-    default: true
-  tideframe.edit:
-    default: op
   bigcasares.mutango.admin:
     description: Manage Mutango Boss (spawn, phases, ruins, shrine and rewards)
     default: op
@@ -177,7 +170,6 @@ permissions:
       bigcasares.pack.reload: true
       bigcasares.pack.info: true
       bigcasares.pack.send: true
-      bigcasares.tideframe.status: true
       bigcasares.items.reload: true
       bigcasares.items.info: true
       bigcasares.skillrating.view: true
@@ -277,14 +269,6 @@ permissions:
   bigcasares.pack.send:
     description: Send the active BigCasares resource pack to Java players
     default: op
-
-  bigcasares.tideframe.status:
-    description: View the embedded Tideframe engine state (pack, screens, players who can see them)
-    default: op
-
-  bigcasares.shop.history:
-    description: View your own last shop purchases and sales
-    default: true
 
   bigcasares.items.reload:
     description: Reload the BigCasares declarative item catalog

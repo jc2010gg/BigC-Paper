@@ -678,9 +678,7 @@ public class MobScalingMutations implements Listener {
         }
     }
 
-    // An interaction another plugin already cancelled (a Tideframe menu holding the player's clicks, a protected area)
-    // never reached the villager: no theft.
-    @EventHandler(ignoreCancelled = true)
+    @EventHandler
     public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
         Entity entity = event.getRightClicked();
         String mutation = getMutation(entity);

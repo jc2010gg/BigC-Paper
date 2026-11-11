@@ -23,7 +23,6 @@ public final class GeyserIntegrationModule implements PluginModule {
     private Optional<GeyserApiFacade> facade;
     private GeyserPlatformGateway platformGateway;
     private RuntimeRegistrationScope compatibilityScope;
-    private volatile boolean packRegistered;
 
     public GeyserIntegrationModule(BigCasares plugin) {
         this(plugin, null);
@@ -77,8 +76,7 @@ public final class GeyserIntegrationModule implements PluginModule {
             this.platformGateway = new GeyserPlatformGateway(facade);
             scope.register("geyser-runtime", this::closeFacade);
             extractBedrockPack().ifPresent(pack -> {
-                packRegistered = runtime.registerResourcePack(pack);
-                if (!packRegistered) {
+                if (!runtime.registerResourcePack(pack)) {
                     plugin.getLogger().warning("El pack Bedrock no pudo registrarse; se mantienen los fallbacks seguros.");
                 }
             });
@@ -130,11 +128,6 @@ public final class GeyserIntegrationModule implements PluginModule {
         return facade.filter(api -> api.capabilities().forms()).map(GeyserShopFormGateway::new);
     }
 
-    /** True while Geyser has BigCasares' Bedrock pack (form look and progress glyphs) registered for its clients. */
-    public boolean bedrockPackSent() {
-        return packRegistered && facade.map(api -> api.capabilities().resourcePacks()).orElse(false);
-    }
-
     public Optional<BedrockEntityGateway> customEntities() {
         return facade.filter(api -> api.capabilities().customEntities())
             .map(GeyserCustomEntityGateway::new);
@@ -143,7 +136,6 @@ public final class GeyserIntegrationModule implements PluginModule {
     private void closeFacade() {
         Optional<GeyserApiFacade> closing = facade;
         facade = Optional.empty();
-        packRegistered = false;
         platformGateway = new GeyserPlatformGateway(Optional.empty());
         closing.ifPresent(runtime -> {
             try {

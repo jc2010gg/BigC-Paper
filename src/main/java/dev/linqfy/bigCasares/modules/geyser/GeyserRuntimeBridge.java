@@ -97,9 +97,7 @@ public final class GeyserRuntimeBridge implements GeyserApiFacade, EventRegistra
             .title(form.title())
             .content(form.content());
         for (BedrockShopForm.Button button : form.buttons()) {
-            if (button.iconPath() != null && !button.iconPath().isBlank()) {
-                builder.button(button.text(), FormImage.Type.PATH, button.iconPath());
-            } else if (button.iconUrl() == null || button.iconUrl().isBlank()) {
+            if (button.iconUrl() == null || button.iconUrl().isBlank()) {
                 builder.button(button.text());
             } else {
                 builder.button(button.text(), FormImage.Type.URL, button.iconUrl());
