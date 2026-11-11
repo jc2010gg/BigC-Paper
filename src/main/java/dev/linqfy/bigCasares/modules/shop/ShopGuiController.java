@@ -1,9 +1,6 @@
 package dev.linqfy.bigCasares.modules.shop;
 
-import dev.linqfy.bigCasares.modules.tideframe.MenuScreen;
-import dev.linqfy.bigCasares.modules.tideframe.MenuTitle;
-import dev.linqfy.bigCasares.modules.tideframe.MenuTitleStyle;
-import dev.linqfy.bigCasares.modules.tideframe.MenuTitles;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.HumanEntity;
@@ -21,9 +18,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
-import java.util.function.Supplier;
 
 public final class ShopGuiController implements Listener {
 
@@ -33,27 +28,17 @@ public final class ShopGuiController implements Listener {
     private final ShopModule module;
     private final ShopCatalog catalog;
     private final ShopService service;
-    private final Supplier<MenuTitleStyle> titleStyle;
     private final Set<Player> viewers = new HashSet<>();
 
     public ShopGuiController(ShopModule module, ShopCatalog catalog, ShopService service) {
-        this(module, catalog, service, () -> MenuTitleStyle.PLAIN);
-    }
-
-    public ShopGuiController(ShopModule module, ShopCatalog catalog, ShopService service, Supplier<MenuTitleStyle> titleStyle) {
         this.module = module;
         this.catalog = catalog;
         this.service = service;
-        this.titleStyle = Objects.requireNonNull(titleStyle, "titleStyle");
     }
 
     public void openCategories(Player player) {
-        MenuTitle title = titleStyle.get().title(player, MenuScreen.SHOP_CATEGORIES, ChatColor.GOLD + "Shop");
-        Inventory inventory = MenuTitles.create(new CategoryMenuHolder(), MenuScreen.SHOP_CATEGORIES.size(), title);
-        // A drawn background has its own slot frames; the glass filler is only for the plain chest.
-        if (!title.drawsBackground()) {
-            fill(inventory, Material.GRAY_STAINED_GLASS_PANE, " ");
-        }
+        Inventory inventory = Bukkit.createInventory(new CategoryMenuHolder(), 27, ChatColor.GOLD + "Shop");
+        fill(inventory, Material.GRAY_STAINED_GLASS_PANE, " ");
         for (ShopCategory category : catalog.categories()) {
             inventory.setItem(category.slot(), categoryItem(category));
         }
@@ -107,11 +92,8 @@ public final class ShopGuiController implements Listener {
     }
 
     public void openCategory(Player player, ShopCategory category) {
-        MenuTitle title = titleStyle.get().title(player, MenuScreen.SHOP_ITEMS, ChatColor.GOLD + stripColor(category.name()));
-        Inventory inventory = MenuTitles.create(new ItemMenuHolder(category), MenuScreen.SHOP_ITEMS.size(), title);
-        if (!title.drawsBackground()) {
-            fill(inventory, Material.BLACK_STAINED_GLASS_PANE, " ");
-        }
+        Inventory inventory = Bukkit.createInventory(new ItemMenuHolder(category), 54, ChatColor.GOLD + stripColor(category.name()));
+        fill(inventory, Material.BLACK_STAINED_GLASS_PANE, " ");
         inventory.setItem(BACK_SLOT, simpleItem(Material.ARROW, ChatColor.YELLOW + "Volver"));
         inventory.setItem(CLOSE_SLOT, simpleItem(Material.BARRIER, ChatColor.RED + "Cerrar"));
         for (ShopEntry entry : category.entries()) {
@@ -165,7 +147,8 @@ public final class ShopGuiController implements Listener {
             List<String> lore = new ArrayList<>();
             lore.add(ChatColor.GREEN + "Click izquierdo: comprar");
             lore.add(ChatColor.RED + "Click derecho: vender");
-            lore.add(ChatColor.GRAY + "Compra: " + entry.buyPrice());
+            String tag = service.priceTag(entry);
+            lore.add(ChatColor.GRAY + "Compra: " + service.buyPrice(entry) + (tag.isEmpty() ? "" : " " + ChatColor.GOLD + tag));
             lore.add(ChatColor.GRAY + "Venta: " + entry.sellPrice());
             for (String line : entry.lore()) {
                 lore.add(translate(line));

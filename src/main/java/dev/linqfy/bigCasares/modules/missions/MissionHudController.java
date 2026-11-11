@@ -1,9 +1,5 @@
 package dev.linqfy.bigCasares.modules.missions;
 
-import dev.linqfy.bigCasares.modules.tideframe.MenuScreen;
-import dev.linqfy.bigCasares.modules.tideframe.MenuTitle;
-import dev.linqfy.bigCasares.modules.tideframe.MenuTitleStyle;
-import dev.linqfy.bigCasares.modules.tideframe.MenuTitles;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -13,7 +9,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -22,8 +17,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.function.Supplier;
 
 public final class MissionHudController implements Listener {
 
@@ -35,22 +28,15 @@ public final class MissionHudController implements Listener {
 
     private final MissionModule module;
     private final VaultEconomyGateway economyGateway;
-    private final Supplier<MenuTitleStyle> titleStyle;
 
     public MissionHudController(MissionModule module, VaultEconomyGateway economyGateway) {
-        this(module, economyGateway, () -> MenuTitleStyle.PLAIN);
-    }
-
-    public MissionHudController(MissionModule module, VaultEconomyGateway economyGateway, Supplier<MenuTitleStyle> titleStyle) {
         this.module = module;
         this.economyGateway = economyGateway;
-        this.titleStyle = Objects.requireNonNull(titleStyle, "titleStyle");
     }
 
     public void open(Player player, MissionHudView view) {
         MissionPlayerState state = module.getOrCreateState(player);
-        MenuTitle title = titleStyle.get().title(player, MenuScreen.MISSIONS, MissionTexts.title(view));
-        Inventory inventory = MenuTitles.create(new MissionMenuHolder(view), INVENTORY_SIZE, title);
+        Inventory inventory = Bukkit.createInventory(player, INVENTORY_SIZE, MissionTexts.title(view));
 
         switch (view) {
             case MAIN_MENU -> populateMainMenu(inventory, state);
@@ -64,7 +50,7 @@ public final class MissionHudController implements Listener {
 
     public void closeOpenViews() {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.getOpenInventory().getTopInventory().getHolder() instanceof MissionMenuHolder) {
+            if (isMissionTitle(player.getOpenInventory().getTitle())) {
                 player.closeInventory();
             }
         }
@@ -76,15 +62,15 @@ public final class MissionHudController implements Listener {
         if (!(clicker instanceof Player player)) {
             return;
         }
-        // Recognised by its holder, not by its title: a drawn title carries glyphs besides the text.
-        if (!(event.getView().getTopInventory().getHolder() instanceof MissionMenuHolder holder)) {
+
+        String title = event.getView().getTitle();
+        if (!isMissionTitle(title)) {
             return;
         }
 
         event.setCancelled(true);
         int slot = event.getRawSlot();
-        MissionHudView view = holder.view();
-        if (view == MissionHudView.MAIN_MENU) {
+        if (title.equals(MissionTexts.title(MissionHudView.MAIN_MENU))) {
             if (slot == DAILY_SLOT) {
                 open(player, MissionHudView.DAILY_LIST);
             } else if (slot == WEEKLY_SLOT) {
@@ -98,7 +84,7 @@ public final class MissionHudController implements Listener {
 
         if (slot == BACK_SLOT) {
             open(player, MissionHudView.MAIN_MENU);
-        } else if (view == MissionHudView.CLAIMABLES && slot == CLAIM_SLOT) {
+        } else if (title.equals(MissionTexts.title(MissionHudView.CLAIMABLES)) && slot == CLAIM_SLOT) {
             module.claimAll(player);
             open(player, MissionHudView.CLAIMABLES);
         }
@@ -157,12 +143,11 @@ public final class MissionHudController implements Listener {
         return createMenuItem(iconFor(assignment), ChatColor.WHITE + assignment.definition().title(), lore);
     }
 
-    /** Marks a missions menu and the view it shows. */
-    record MissionMenuHolder(MissionHudView view) implements InventoryHolder {
-        @Override
-        public Inventory getInventory() {
-            return null;
-        }
+    private boolean isMissionTitle(String title) {
+        return title.equals(MissionTexts.title(MissionHudView.MAIN_MENU))
+            || title.equals(MissionTexts.title(MissionHudView.DAILY_LIST))
+            || title.equals(MissionTexts.title(MissionHudView.WEEKLY_LIST))
+            || title.equals(MissionTexts.title(MissionHudView.CLAIMABLES));
     }
 
     private ItemStack createMenuItem(Material material, String name, List<String> lore) {
