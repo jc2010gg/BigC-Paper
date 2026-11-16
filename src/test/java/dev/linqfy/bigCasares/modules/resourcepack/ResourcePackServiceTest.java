@@ -173,6 +173,34 @@ class ResourcePackServiceTest {
     }
 
     @Test
+    void theMenuPackIsReadyOnlyWhenItsCurrentBigCasaresRevisionIsLoaded() {
+        ResourcePackManifest previous = manifest("075a3f4dec4b");
+        ResourcePackManifest current = manifest("175a3f4dec4b");
+        URI bigCasaresUri = URI.create("https://example.com/bigcasares.zip");
+        UUID betterModelId = UUID.fromString("00000000-0000-0000-0000-000000000081");
+        List<JavaPackDelivery> betterModel = List.of(new JavaPackDelivery(
+            betterModelId, URI.create("https://example.com/bettermodel.zip"), new byte[20], "bettermodel"));
+        ResourcePackService service = service(previous, (playerId, packId, uri, sha1, prompt, required) -> { }, false);
+
+        service.activateStack(previous, null, betterModel);
+        assertTrue(service.requestFor(PLAYER_ID));
+        service.updateState(betterModelId, PLAYER_ID, ResourcePackPlayerState.LOADED);
+        assertFalse(service.hasLoadedBigCasaresPack(PLAYER_ID), "BetterModel does not supply the menu font");
+
+        service.activateStack(previous, bigCasaresUri, betterModel);
+        service.updateState(previous.javaUuid(), PLAYER_ID, ResourcePackPlayerState.LOADED);
+        assertTrue(service.hasLoadedBigCasaresPack(PLAYER_ID));
+
+        service.activateStack(current, bigCasaresUri, betterModel);
+        assertFalse(service.hasLoadedBigCasaresPack(PLAYER_ID), "the previous BigCasares pack may lack the menu font");
+        service.updateState(current.javaUuid(), PLAYER_ID, ResourcePackPlayerState.LOADED);
+        assertTrue(service.hasLoadedBigCasaresPack(PLAYER_ID));
+
+        service.activateStack(current, null, betterModel);
+        assertFalse(service.hasLoadedBigCasaresPack(PLAYER_ID), "a cached status does not validate a removed delivery");
+    }
+
+    @Test
     void transitionRecognizesButDoesNotApplyLatePreviousPackStatus() {
         ResourcePackManifest previous = manifest("075a3f4dec4b");
         ResourcePackManifest current = manifest("175a3f4dec4b");
