@@ -426,7 +426,7 @@ public final class BigCasares extends JavaPlugin {
         this.shopModule.configurePlatform(this::resolveClientPlatform, this::sendBedrockShopForm);
         TideframeUiModule tideframeUiModule = new TideframeUiModule(
             playerId -> resourcePackModule != null
-                && resourcePackModule.service().map(service -> service.hasLoadedPack(playerId)).orElse(false),
+                && resourcePackModule.service().map(service -> service.hasLoadedBigCasaresPack(playerId)).orElse(false),
             playerId -> resolveClientPlatform(playerId) == ClientPlatform.BEDROCK
         );
         this.missionModule.configureMenuTitleStyle(tideframeUiModule::style);
