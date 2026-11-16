@@ -116,6 +116,14 @@ public final class ResourcePackService {
         return state(playerId) == ResourcePackPlayerState.LOADED;
     }
 
+    public boolean hasLoadedBigCasaresPack(UUID playerId) {
+        Map<UUID, ResourcePackPlayerState> playerStates = states.get(playerId);
+        Delivery current = delivery.get();
+        UUID currentPackId = current.manifest().javaUuid();
+        return playerStates != null && playerStates.get(currentPackId) == ResourcePackPlayerState.LOADED
+            && current.packs().stream().anyMatch(pack -> pack.id().equals(currentPackId));
+    }
+
     public boolean isRequired() {
         return settings.required();
     }
